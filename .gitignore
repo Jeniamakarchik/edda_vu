@@ -2,7 +2,7 @@
 .DS_Store
 
 # Project file
-.Rproj
+*.Rproj
 
 # History files
 .Rhistory
