@@ -7,118 +7,145 @@ fontsize: 11pt
 highlight: tango
 ---
 
-## Short introduction to R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. R Markdown files permit you to interweave R code with ordinary text to produce well-formatted data analysis reports that are easy to modify. The R Markdown file itself shows the readers exactly how you got the results in your report.
-For more details on using R Markdown see [\color{blue}{\underline{http://rmarkdown.rstudio.com}}](http://rmarkdown.rstudio.com).
-
-When you click the **Knit** button, a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. 
-For inline R code, surround code with back ticks and r. R replaces inline code with its results. For example, two plus one is `r 2+1`;
-for the build-in R dataset `cars`, there were `r nrow(cars)` 
-cars studied. You can embed an R code chunk like this:
+## Exercise 1. 
+The data set birthweight.txt contains the birthweights (in grams) of 188 newborn babies. Denote the underlying mean birthweight by $\mu$.
 
 ```{r}
-summary(cars)
+birthweight <- readLines("data/birthweight.txt")
+birthweight <- as.double(birthweight[2:length(birthweight)])
+birthweight
+```
+```{r}
+length(birthweight)
 ```
 
-### Figures
-
-You can also embed plots, for example:
-
-```{r,echo=FALSE,fig.height=3.5}
-plot(cars)
+```{r}
+birthweight_mean <- mean(birthweight)
+birthweight_mean
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot. Use knitr options to style the output of a chunk. Place options in brackets above the chunk.
-Other options with the defaults are: the `eval=FALSE` option just displays the R code (and does not run it); `warning=TRUE` whether to display warnings; `tidy=TRUE` wraps long code so it does not run off the page.
+**a)** Check normality of the data. Assuming normality (irrespective of your conclusion about normality), construct a bounded 96%-CI for $\mu$. Evaluate the sample size needed to provide that the length of the 96%-CI is at most 100. Compute a bootstrap 96%-CI for $\mu$ and compare it to the above CI.
 
-You can control the size and placement of figures. For example, 
-you can put two figures (or more) next to each other. 
-Use `par(mfrow=c(n,m))` to create `n` by `m` plots in one picture in R.
-You can adjust the proportions of figures by using the `fig.width` 
-and `fig.height` chunk options. These are specified in inches, 
-and will be automatically scaled down to fit within the handout margin.
-Chunk option `fig.align`  takes values `left`, `right`, or `center` 
-(to align figures in the output document).
 
-```{r,fig.margin = TRUE,fig.width=6,fig.height=3,fig.align="center"}
-par(mfrow=c(1,2)); x1=rnorm(50); hist(x1); qqnorm(x1)
+```{r}
+qqnorm(y = birthweight)
 ```
 
-You can arrange for figures to span across the entire page by using 
-the `fig.fullwidth` chunk option. 
-
-```{r,fig.fullwidth=TRUE,fig.height=3}
-plot(iris$Sepal.Length,iris$Petal.Length,xlab="Sepal.Length",ylab="Petal.Length")
+```{r}
+hist(birthweight)
+# add density line
+# lines(density(birthweight), col="blue",lwd=2)
 ```
 
-More about chunk options can be found at [\color{blue}{\underline{https://yihui.name/knitr/options/}}](https://yihui.name/knitr/options/).
+```{r}
+shapiro.test(birthweight)
+# H0 - normal distribution, H1 - not normal
+```
+NORMAL DISTRIBUTION!
 
+Let's go for CI-96%:
 
-### Equations
+```{r}
+t.test(birthweight, conf.level = 0.96)
+```
+```{r}
+B <- 1000
+alpha <- 0.04
+T_star <- numeric(B)
 
-To produce mathematical symbols, you can also include \LaTeX\ expessions/equations in your report:
-inline $\frac{d}{dx}\left(\int_{0}^{x} f(u)\,du\right)=f(x)$ and 
-in the display mode:
-\[
-\frac{d}{dx}\left( \int_{0}^{x} f(u)\,du\right)=f(x).
-\]
-To be able to use this functionality, \LaTeX\ has to be installed.
- 
-### Footnotes
+for(i in 1:B) {
+  X_star <- sample(birthweight, replace = TRUE)
+  T_star[i] <- mean(X_star)
+}
 
-Here is the use of a footnote^[This is a footnote.]. 
+T_star_q2 <- quantile(T_star, alpha/2)
+T_star_q98 <- quantile(T_star, 1 - alpha/2)
 
-
-### Images
-Want an image? This will do it. 
-To depict an image (say, `my_image.jpg` which should be in your current working directory), use this command 
-
-<!-- ![caption for my image](my_image.jpg) -->
-
-### Tables  
-
-Want a table? This will create one (note that the separators 
-*do not* have to be aligned).
-
-Table Header  | Second Header
-------------- | -------------
-Table Cell    | Cell 2
-Cell 3        | Cell 4 
-
-
-You can also make table by using knit's `kable` function:
-
-```{r echo=FALSE, results='asis'}
-library(knitr)
-kable(mtcars[1:5,],caption="A knit kable.")
+c(2*birthweight_mean - T_star_q98, 2*birthweight_mean - T_star_q2)
+```
+```{r}
+sum(T_star<T_star_q2)
 ```
 
-### Block quote
-> This will create a block quote, 
-> if you want one.
+<!-- #TODO: FIGURE OUT SAMPLE SIZE FOR HAVING CI INTERVAL LENGTH + 100 -->
+<!-- 828 babies to get the CI -->
 
-### Verbatim
+**b)**  An expert claims that the mean birthweight is bigger than 2800 gram. Verify this claim by using a relevant t-test, explain the meaning of the CI in the R-output for this test. Also propose and perform a suitable sign tests for this problem.
+
+```{r}
+t.test(birthweight, alternative = "greater", mu=2800)
 ```
-This text is displayed verbatim/preformatted.
+We reject H0(p=0.01337), so H1 is true and mean of the sample is bigger than 2800. 
+CI is infinite on right side, since the test is one-sided.
+
+
+Binom test
+
+H0: mean <= 2800,
+H1: mean > 2800.
+
+```{r}
+greater_weight <- as.integer(birthweight > 2800)
+binom.test(sum(greater_weight), length(greater_weight), p=0.5, alt="g")
+```
+We reject H0(p=0.03868), so H1 is true and mean of the sample is bigger than 2800. 
+
+Both test confirmed the hypothesis that mean of the sample is bigger than 2800.
+
+**c)** Propose a way to compute the powers of the t-test and sing test from b) at some $\mu$ > 2800, comment.
+```{r}
+
+
 ```
 
-### Links
-Links: http://example.com, [in-text link to Google](http://google.com).
+**d)**  Let $p$ be the probability that birthweight of a newborn baby is less than 2600 gram. Using asymptotic normality, the expert computed the left end $\hat{p}=0.25$ of the confidence interval $[\hat{p_l}, \hat{p_r}]$ for $p$. Recover the whole confidence interval and its confidence level.
+```{r}
 
-This is a \hyperlink{target1}{{\color{blue}{\underline{hyperlink}}}}.
+```
 
-\hypertarget{target1}{{\color{blue}{\underline{This}}}} is where the hyperlink jumps to.
-
-### Itimization, italicized and embolded text
-- Single asterisks italicize text *like this*. 
-- Double asterisks embolden text **like this**.
-
-One more way to italicize and embold: _italic_ and __bold__.
+**e)** The expert also reports that there were 34 male and 28 female babies among 62 who weighted less than 2600 gram, and 61 male and 65 female babies among the remaining 126 babies. The expert claims that the mean weight is different for male and female babies. Verify this claim by an appropriate test.
 
 
+success: w > 2600
+```{r}
+prop.test(c(61, 65), c(95, 93))
+```
+We accept H0: p1-p2=0, where p1, p2 - proportions of the success in population.
 
- 
+## Exercise 2
+A study tested whether cholesterol was reduced after using a certain brand of margarine as part of a low fat low cholesterol diet. The data set cholesterol.txt contains information on 18 people using margarine to reduce cholesterol: columns Before and After8weeks contain the cholesterol level (mmol/L) respectively before the diet and after 8 weeks on the diet.
+
+```{r}
+df <- as.data.frame(read.table("data/cholesterol.txt", header=TRUE))
+head(df)
+```
+
+
+**a)** Make some relevant plots of this data set, comment on normality. Are there any inconsistencies in the data? Investigate whether the columns Before and After8weeks are correlated.
+```{r}
+diffs <- df[, 1] - df[, 2]
+diffs
+qqnorm(diffs)
+```
+
+```{r}
+hist(diffs)
+```
+```{r}
+shapiro.test(diffs)
+```
+Differences are normally distributed.
+
+```{r}
+shapiro.test(df[, 1])
+shapiro.test(df[, 2])
+```
+```{r}
+cor.test(df[, 1], df[, 2], method="pearson")
+```
+
+
+
 
 ## Exercise 1 
 Below is a template for reporting the exercises from the assignments.
