@@ -7,6 +7,11 @@ fontsize: 11pt
 highlight: tango
 ---
 
+```{r, echo=FALSE}
+options(digits=3)
+```
+
+
 ## Exercise 1. 
 The data set birthweight.txt contains the birthweights (in grams) of 188 newborn babies. Denote the underlying mean birthweight by $\mu$.
 
@@ -144,40 +149,110 @@ shapiro.test(df[, 2])
 cor.test(df[, 1], df[, 2], method="pearson")
 ```
 
-
-
-
-## Exercise 1 
-Below is a template for reporting the exercises from the assignments.
-
-**a)** Here are some consequitive R-commands.
 ```{r}
-x=rep(c("A","B"),each=5); x
-sample(x)
-x=rnorm(100)
-```
-Now the same code chunk but with all the output collapsed into signle block.
-```{r, collapse=TRUE}
-x=rep(c("A","B"),each=5); x
-sample(x)
-x=rnorm(100)
+# Create a first line
+plot(1:length(df[, 1]), df[, 1], type = "b", pch=19, col = "red", xlab = "individual", ylab = "cholesterol")
+lines(1:length(df[, 2]), df[, 2], pch=18, col = "blue", type = "b", lty=2)
+legend("topleft", legend=c("Before", "After"), col=c("red", "blue"), lty = 1:2, cex=0.8)
 ```
 
-**b)** Below we perform a one sample t-test for the artificial data 
-(that we generate ourselves).
+**b)** Apply two relevant tests (cf. Lectures 2, 3) to verify whether the diet with low fat margarine has an effect (argue whether the data are paired or not). Is a permutation test applicable?
+
+Data is paired since it is two different measurements of the same person and two samples are correlated.
+Relevant test:
+
+1. T-test paired test
 ```{r}
-mu=0.2
-x=rnorm(100,mu,1) # creating artificial data
-t.test(x,mean=0)   # t.test(x,alternative=c("two.sided"),conf.level=0.95,mu=10)
+t.test(df[, 1], df[, 2], paired=2)
+```
+-> based on p-value we reject null-hypothesis that samples have the same mean. there is a difference between these two samples.
+
+2. Permutation test - it is applicable because we are only testing for a difference between mean, not how they relate to each other.
+```{r}
+diff_mean <- function(x, y) {
+  return(mean(x-y))
+}
+
+# original dataframe
+stats <- diff_mean(df[, 1], df[, 2])
+stats
+
+B <- 1000
+t_star <- numeric(B)
+
+for (i in 1:B) {
+  diff_star <- t(apply(cbind(df[, 1], df[, 2]), 1, sample))
+  t_star[i] <- diff_mean(diff_star[, 1], diff_star[, 2])
+}
+
+hist(t_star)
+# plot(rep(stats, 2), c(0, 50), col="red", lwd=2)
+lines(rep(stats, 2), c(0, 50), col="red", lwd=2)
+```
+```{r}
+# calculating p-value
+pl <- sum(t_star < stats) / B
+pr <- sum(t_star > stats) / B
+
+p <- 2*min(pl, pr)
+p
 ```
 
-**c)** We often do not need to report the whole output of R-commands, only certain values of the output. For example, below we perform a two-sample t-test and report only the (appropriately rounded) values of t-statistics and the p-pavue.
+**c)**
+$\mu = (\theta + 3) / 2, \theta > 3$
+```{r}
+
+mu <- mean(df[, 2])
+mu # bar{x}
+
+s <- sd(df[, 2])
+s
+
+theta_hat <- 2*mu - 3
+theta_hat
+
+alpha <- 0.05
+
+n <- length(df[, 2])
+t_alpha <- qt(1 - alpha/2, df=n)
+t_alpha
+
+theta_l <- theta_hat - t_alpha*s/sqrt(n)
+theta_r <- theta_hat + t_alpha*s/sqrt(n)
+c("[", theta_l,",", theta_r, "]")
+```
+We can improve the CI by having more individuals in the samples.
+
+**d)** 
 
 ```{r}
-mu=0;nu=0.5
-x=rnorm(50,mu,1); y=rnorm(50,nu,1) # creating artificial data
-ttest=t.test(x,y) 
-```
+t <- max(df[, 2])
+t
 
-The value of t-statistics in the above evaluation is  `r round(ttest[[1]],2)` and the p-value is `r round(ttest[[3]],4)`.
+n <- length(df[, 2])
+n
+
+for (theta in 3:12) {
+  B <- 1000
+  t_star <- numeric(B)
   
+  for (i in 1:B) {
+    x_star <- runif(n, min = 3, max = theta)
+    t_star[i] <- max(x_star)
+  }
+  
+  pl <- sum(t_star < t)/B
+  pr <- sum(t_star > t)/B
+  
+  p <- 2* min(pl, pr)
+  print(paste("Theta =", theta, ", ", p))
+}
+```
+**e)**
+Medium and proportion tests
+```{r}
+less_chol <- as.integer(df[, 2] < 6)
+binom.test(sum(less_chol), length(less_chol), p=0.5, alt="g")
+```
+
+
