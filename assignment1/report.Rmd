@@ -303,8 +303,99 @@ The best diet is number 3.
 qqnorm(residuals(dietaov))
 plot(fitted(dietaov), residuals(dietaov))
 ```
+
 ```{r}
 kruskal.test(df$weight.lost, df$diet)
 ```
 This supports the ANOVA result.
 
+**c)**
+
+```{r}
+df$gender <- as.factor(df$gender)
+dietgenderaov <- lm(weight.lost~gender*diet,data=df)
+anova(dietgenderaov)
+```
+
+```{r}
+summary(dietgenderaov)
+```
+
+```{r}
+par(mfrow=c(1, 2))
+interaction.plot(df$gender, df$diet, df$weight.lost)
+interaction.plot(df$diet, df$gender, df$weight.lost)
+```
+
+Assumption: diet depends on gender, we can see that effect of diet varies inside women.
+
+```{r}
+genderaov <- lm(weight.lost~gender,data=df)
+anova(genderaov)
+summary(genderaov)
+```
+
+```{r}
+# Checking assumptions
+par(mfrow=c(1, 2))
+qqnorm(residuals(dietgenderaov))
+plot(fitted(dietgenderaov), residuals(dietgenderaov))
+```
+Residuals do not look like something that is normally distributed, which violates our assumptions about normality and makes 
+
+**e)**
+We prefer b) as c) looks irrelevant for the weight loss. 
+```{r}
+print(paste('Diet 1:', dietaov$coefficients[1]))
+print(paste('Diet 2:', dietaov$coefficients[1] + dietaov$coefficients[2]))
+print(paste('Diet 3:', dietaov$coefficients[1] + dietaov$coefficients[3]))
+```
+
+## Exercise 4
+
+**a)**
+```{r}
+require("MASS")
+```
+
+```{r}
+B <- 6
+P <- 4
+T <- 3
+
+process <- c()
+for (i in 1:B) {
+  block <- c()
+  for (tr in 1:T) {
+    block <- cbind(block, as.numeric(sample(1:P) > 2))
+  }
+  process <- rbind(process, block)
+}
+process
+```
+
+**b)**
+```{r}
+interaction.plot(npk$block, npk$N, npk$yield)
+```
+
+N has effect on yield
+We should take block into accountance since different plots in blocks have different combinations of other fertilizers ???????
+
+**c)**
+```{r}
+# We do plus as we don't care about interactions
+npk2anova <- lm(yield~block+N, data=npk)
+anova(npk2anova)
+```
+
+```{r}
+summary(npk2anova)
+```
+
+Changes in blocks are not significant so we can consider that block variable doesn't affect
+
+Friedman test:
+- we have two observation for each combination
+- we can't use it
+**)**
