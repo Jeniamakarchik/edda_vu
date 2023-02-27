@@ -13,20 +13,18 @@ options(digits=3)
 
 
 ## Exercise 1. 
-The data set birthweight.txt contains the birthweights (in grams) of 188 newborn babies. Denote the underlying mean birthweight by $\mu$.
 
-```{r}
+```{r, include=FALSE}
 birthweight <- readLines("data/birthweight.txt")
 birthweight <- as.double(birthweight[2:length(birthweight)])
 birthweight
-```
-```{r}
-length(birthweight)
+
+# print(paste("Amount of observations: ", length(birthweight)))
 ```
 
 ```{r}
 birthweight_mean <- mean(birthweight)
-birthweight_mean
+print(paste("Mean of the sample: ", birthweight_mean))
 ```
 
 **a)** Check normality of the data. Assuming normality (irrespective of your conclusion about normality), construct a bounded 96%-CI for $\mu$. Evaluate the sample size needed to provide that the length of the 96%-CI is at most 100. Compute a bootstrap 96%-CI for $\mu$ and compare it to the above CI.
@@ -221,7 +219,7 @@ theta_l <- theta_hat - t_alpha*s/sqrt(n)
 theta_r <- theta_hat + t_alpha*s/sqrt(n)
 c("[", theta_l,",", theta_r, "]")
 ```
-We can improve the CI by having more individuals in the samples.
+We can improve the CI by having more individuals in the samples. We can improve since we know the distribution and we know the estimation for theta.
 
 **d)** 
 
@@ -248,6 +246,7 @@ for (theta in 3:12) {
   print(paste("Theta =", theta, ", ", p))
 }
 ```
+
 **e)**
 Medium and proportion tests
 ```{r}
@@ -354,14 +353,14 @@ print(paste('Diet 3:', dietaov$coefficients[1] + dietaov$coefficients[3]))
 ## Exercise 4
 
 **a)**
-```{r}
+```{r, include=FALSE}
 require("MASS")
 ```
 
+
+
 ```{r}
-B <- 6
-P <- 4
-T <- 3
+B <- 6; P <- 4; T <- 3
 
 process <- c()
 for (i in 1:B) {
@@ -371,49 +370,102 @@ for (i in 1:B) {
   }
   process <- rbind(process, block)
 }
+
+process <- t(process)
+rownames(process) <- c("N", "P", "K")
+colnames(process) <- paste0(rep(1:6, each=4), paste0(".", rep(1:4, 6)))
 process
 ```
+In the table rows represent every soil additive and columns represent 6 blocks, each with 4 plots (first number - block, second number - plot). As you can see, every additive appears twice in each block.
 
 **b)**
 ```{r}
-interaction.plot(npk$block, npk$N, npk$yield)
+interaction.plot(npk$block, npk$N, npk$yield, ylab='average yield', xlab='block', main='Average yield per block', legend=FALSE)
+legend("topright", c("yes", "no"), title="N presence", lwd=1, lty=c(1, 2))
 ```
 
-N has effect on yield
-We should take block into accountance since different plots in blocks have different combinations of other fertilizers ???????
+We have reason to believe that *block* may affect *yield*. This could happen because of slightly different environmental conditions: sun exposure, soil composition, etc. The plot supports this idea since it appears that average yield varies depending on the block when *N* is both present and absent.
 
 **c)**
 ```{r}
-# We do plus as we don't care about interactions ---> actually I think we do
-npk2anova <- lm(yield~block*N, data=npk)
-anova(npk2anova)
+n_block_lm <- lm(yield~block*N, data=npk)
+anova(n_block_lm)
 ```
+It is seen from the results that *N* and *block* are significant, but their interaction is not. Let's check summary for every level to see how each block individually affect the *yield*.
 
 ```{r}
-summary(npk2anova)
+summary(n_block_lm)
 ```
 
-Changes in blocks are not significant so we can consider that block variable doesn't affect
+We can see that the difference between blocks is not significant except for block 3. Additionally, it seen that presence of *N* in the soil makes significant difference to the *yield*. Moreover, interaction between *block* and *N* is insignificant.
 
-Friedman test:
-- we have two observation for each combination
-- we can't use it
+Because interaction is not significant in our case but *block* is significant by itself, we should go for the additive model.
+
+```{r}
+lm <- lm(yield~block+N, data=npk)
+anova(lm)
+```
+Using the additive model we see that both *block* and *N* are still significant. Finally, we are going to check the model assumptions about normality of residuals.
+
+
+```{r, echo=FALSE}
+par(mfrow=c(1, 2))
+qqnorm(residuals(lm))
+plot(fitted(lm), residuals(lm))
+```
+The residuals and the Q-Q plot appear fairly normal.
+
+Lastly, we cannot use Friedman test as we have two observations for each combination of soil additives.
 
 **d)**
 ```{r}
 npklm1 <- lm(yield~P + K + block*N, data=npk)
 npklm2 <- lm(yield~N + K + block*P, data=npk)
 npklm3 <- lm(yield~N + P + block*K, data=npk)
+npklm4 <- lm(yield~block + N + P + K, data=npk)
+npklm5 <- lm(yield~N + P + K, data=npk)
+```
 
+```{r}
+print('Y ~ P + K + block*N')
 anova(npklm1)
+```
+```{r}
+print('Y ~ N + K + block*P')
 anova(npklm2)
+```
+```{r}
+print('Y ~ P + N + block*K')
 anova(npklm3)
 ```
+
+```{r}
+print('Y ~ P + K + N + block')
+anova(npklm4)
+```
+
+```{r}
+print('Y ~ P + K + N')
+anova(npklm5)
+```
+
+```{r}
+npklm6 <- lm(yield~block + N + K, data=npk)
+anova(npklm6)
+```
+
+```{r}
+npklm7 <- lm(yield~P*N*K, data=npk)
+anova(npklm7)
+```
+
+We keep additive model for all factors, since pair-wise interactions were insignificant for all the factors. This model is our favorite as it shows also significance of each factor.
+
 
 **e)**
 
 ```{r}
-library(lme4)
+require(lme4)
 npklmer <- lmer(yield~N+(1|block), REML=FALSE, data=npk)
 npklmer1 <- lmer(yield~(1|block), REML=FALSE, data=npk)
 anova(npklmer1, npklmer)
