@@ -27,30 +27,24 @@ birthweight_mean <- mean(birthweight)
 print(paste("Mean of the sample: ", birthweight_mean))
 ```
 
-**a)** Check normality of the data. Assuming normality (irrespective of your conclusion about normality), construct a bounded 96%-CI for $\mu$. Evaluate the sample size needed to provide that the length of the 96%-CI is at most 100. Compute a bootstrap 96%-CI for $\mu$ and compare it to the above CI.
-
+**a)** 
 
 ```{r}
+par(mfrow=c(1,2))
 qqnorm(y = birthweight)
-```
-
-```{r}
 hist(birthweight)
-# add density line
-# lines(density(birthweight), col="blue",lwd=2)
 ```
+Given the QQ-plot and the histogram above, the data appears to be normal.
 
-```{r}
-shapiro.test(birthweight)
-# H0 - normal distribution, H1 - not normal
-```
-NORMAL DISTRIBUTION!
-
-Let's go for CI-96%:
+To calculate the CI-96% in R:
 
 ```{r}
 t.test(birthweight, conf.level = 0.96)
 ```
+With a 96% CI, we get [2808-3019]. In order to decrease this range to 100, we can reverse the calculations in order to check the required sample size. In order to get CI in the first place, we use $$2913 +/- 2.05(ste)$$, given either of the CI values, we can calculate the ste. For example, using the upper bound, we gather that $$3019 = 2913 + 2.05(ste)$$, resulting in $$ste =  51.7$$. In order to ensure a range of max 100, the $$ste \times 2.05$$ should not be higher than 50, which gives us a maximum $$ste = 24.39$$. 
+
+The ste is given by $$ste = \frac{s}{\sqrt(n)}$$, this way we can calculate *s* with the data already found, $$51.7 = \frac{s}{\sqrt(188)}$$, which gives us $$s=708.87$$. In order to mazimixe ste at 24.39, we can plug this into the ste formula to find the new *n*, such that, $$24.39 = \frac{708.87}{\sqrt(n)}$$, giving us $$n=844.71$$. Therefore, a sample size of approximately 845 babies would be needed in order to have a 96% CI with a range of 100.
+
 ```{r}
 B <- 1000
 alpha <- 0.04
