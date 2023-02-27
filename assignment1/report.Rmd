@@ -112,64 +112,70 @@ prop.test(c(61, 65), c(95, 93))
 As the p-value is bigger than 0.05, we fail to reject the null-hypothesis, meaning that there is no true difference between the mean weight of males and females. 
 
 ## Exercise 2
-A study tested whether cholesterol was reduced after using a certain brand of margarine as part of a low fat low cholesterol diet. The data set cholesterol.txt contains information on 18 people using margarine to reduce cholesterol: columns Before and After8weeks contain the cholesterol level (mmol/L) respectively before the diet and after 8 weeks on the diet.
 
-```{r}
+```{r, include=FALSE}
 df <- as.data.frame(read.table("data/cholesterol.txt", header=TRUE))
 head(df)
 ```
 
-
-**a)** Make some relevant plots of this data set, comment on normality. Are there any inconsistencies in the data? Investigate whether the columns Before and After8weeks are correlated.
-```{r}
-diffs <- df[, 1] - df[, 2]
-diffs
-qqnorm(diffs)
+**a)**
+```{r, results='hide'}
+par(mfrow=c(2, 2))
+hist(df[, 1], main="Before", xlab="cholesterol level")
+hist(df[, 2], main="After", xlab="cholesterol level")
+qqnorm(df[, 1])
+qqnorm(df[, 2])
 ```
-
-```{r}
-hist(diffs)
-```
-```{r}
-shapiro.test(diffs)
-```
-Differences are normally distributed.
 
 ```{r}
 shapiro.test(df[, 1])
 shapiro.test(df[, 2])
 ```
-```{r}
-cor.test(df[, 1], df[, 2], method="pearson")
-```
 
-```{r}
+As we can see from the plots and Shapiro test, the data is distributed normally.
+
+# ```{r, results='hide'}
+# diffs <- df[, 1] - df[, 2]
+# par(mfrow=c(1, 2))
+# qqnorm(diffs)
+# hist(diffs)
+# ```
+
+# ```{r, echo=TRUE}
+# shapiro.test(diffs)
+# ```
+
+```{r, echo=FALSE}
 # Create a first line
 plot(1:length(df[, 1]), df[, 1], type = "b", pch=19, col = "red", xlab = "individual", ylab = "cholesterol")
 lines(1:length(df[, 2]), df[, 2], pch=18, col = "blue", type = "b", lty=2)
 legend("topleft", legend=c("Before", "After"), col=c("red", "blue"), lty = 1:2, cex=0.8)
 ```
 
-**b)** Apply two relevant tests (cf. Lectures 2, 3) to verify whether the diet with low fat margarine has an effect (argue whether the data are paired or not). Is a permutation test applicable?
+We draw the data as lines to see if there any consistences in data such as data incompleteness, outliers or meaningless data points.
 
-Data is paired since it is two different measurements of the same person and two samples are correlated.
-Relevant test:
 
-1. T-test paired test
+```{r}
+cor.test(df[, 1], df[, 2], method="pearson")
+```
+From the result of Pearson's test we can conclude that data before and data after are strongly correlated.
+
+**b)**
+Data is paired since it is  two different measurements of the same person and two samples are correlated.
+
+In order to investigate has the diet affected individuals, we are going to apply tests (Paired t-test and Permutation test) that check difference between mean of different samples. Permutation test is applicable because it doesn't take normality into account and we are only testing for a difference between means, not how they relate to each other.
+
 ```{r}
 t.test(df[, 1], df[, 2], paired=2)
 ```
--> based on p-value we reject null-hypothesis that samples have the same mean. there is a difference between these two samples.
+Based on p-value obtained for paired T-test we reject null-hypothesis that samples have the same mean. Hence, there is a difference between these two samples.
 
-2. Permutation test - it is applicable because we are only testing for a difference between mean, not how they relate to each other.
 ```{r}
 diff_mean <- function(x, y) {
   return(mean(x-y))
 }
 
-# original dataframe
 stats <- diff_mean(df[, 1], df[, 2])
-stats
 
 B <- 1000
 t_star <- numeric(B)
@@ -179,8 +185,7 @@ for (i in 1:B) {
   t_star[i] <- diff_mean(diff_star[, 1], diff_star[, 2])
 }
 
-hist(t_star)
-# plot(rep(stats, 2), c(0, 50), col="red", lwd=2)
+hist(t_star, main="Histogram of statistics", xlab="values")
 lines(rep(stats, 2), c(0, 50), col="red", lwd=2)
 ```
 ```{r}
@@ -189,42 +194,46 @@ pl <- sum(t_star < stats) / B
 pr <- sum(t_star > stats) / B
 
 p <- 2*min(pl, pr)
-p
+print(paste("P-value =", p))
 ```
 
+We rejecting the null hypothesis that there is no difference between two samples.
+
 **c)**
-$\mu = (\theta + 3) / 2, \theta > 3$
-```{r}
+We have sample $x_i \in R[3, \theta]$, $i=\overline{1, 18}$, $\theta>3$. Analytic mean for this distribution will be $\mu = \frac{3 + \theta}{2}$.
 
+We can estimate the mean and the standard distribution using our sample.
+```{r, echo=FALSE}
 mu <- mean(df[, 2])
-mu # bar{x}
-
 s <- sd(df[, 2])
-s
+print(paste("mu =", mu, "s =", s))
+```
 
+From this value we can obtain the estimation for the parameter $\theta$. Knowing $\hat{\mu}$   $\hat{\theta} = 2*\hat{\mu} - 3$.
+```{r, echo=FALSE}
 theta_hat <- 2*mu - 3
-theta_hat
+print(paste("theta_hat =", theta_hat))
+```
 
+Then, using Central Limit Theorem, we can obtain confidence interval for parameter $\theta$:
+$$[t_{-\frac{\alpha}{2}}\frac{s}{\sqrt{n}} + \frac{\theta + 3}{2}, t_{\frac{\alpha}{2}}\frac{s}{\sqrt{n}} + \frac{\theta + 3}{2}]$$
+
+```{r}
 alpha <- 0.05
 
 n <- length(df[, 2])
 t_alpha <- qt(1 - alpha/2, df=n)
-t_alpha
-
 theta_l <- theta_hat - t_alpha*s/sqrt(n)
 theta_r <- theta_hat + t_alpha*s/sqrt(n)
-c("[", theta_l,",", theta_r, "]")
+
+print(paste0("95% confidence interval: [", theta_l,", ", theta_r, "]"))
 ```
-We can improve the CI by having more individuals in the samples. We can improve since we know the distribution and we know the estimation for theta.
+We can improve the CI by having more individuals in the samples, as increasing in parameter *n* causes decreasing in standard deviation for sample of means. We can improve since we know the distribution and we know the estimation for theta.
 
 **d)** 
 
 ```{r}
-t <- max(df[, 2])
-t
-
-n <- length(df[, 2])
-n
+t <- max(df[, 2]); n <- length(df[, 2])
 
 for (theta in 3:12) {
   B <- 1000
@@ -239,50 +248,62 @@ for (theta in 3:12) {
   pr <- sum(t_star > t)/B
   
   p <- 2* min(pl, pr)
-  print(paste("Theta =", theta, ", ", p))
+  print(paste("Theta =", theta, ", ", p, "KS = "))
 }
 ```
+Using bootstrap we have values of $\theta = 8$ and $\theta = 9$ for which our null hypothesis is not rejected (p-value > 0.05).
+We can apply Kolmogorov-Smirnov test to examine the sample since it examine if two samples were drawn from the one distribution. We can generate sample from uniform distribution and apply test on them.
+
+```{r}
+ks.test(df[, 2], runif(100000, min = 3, max = 8))
+```
+P-value = 0.04, so we accept null hypothesis and can confirm that the sample was drown from  $U(3, \theta)$.
 
 **e)**
-Medium and proportion tests
+We are using sign test to test if the median of the cholesterol level is $\l 6$.
 ```{r}
 less_chol <- as.integer(df[, 2] < 6)
 binom.test(sum(less_chol), length(less_chol), p=0.5, alt="g")
 ```
+
+
+
+proportion tests
 ```{r}
 less_chol <- as.integer(df[, 2] < 4.5)
 binom.test(sum(less_chol),length(less_chol),p=0.25, alt="l")
 ```
-## Exercise 3
 
+## Exercise 3
+We can compute and add the variable *weight.lost* as follows:
 ```{r}
 df <- as.data.frame(read.table("data/diet.txt", header=TRUE))
 df["weight.lost"] <- df["preweight"] - df["weight6weeks"]
 head(df)
 ```
 **a)**
+To visualize the effect of diet on weight lost, we can plot the weights before and after the diets for every individual.
 ```{r}
-# Create a first line
 plot(1:length(df[,5]), df[,5], type = "b", pch=19, col = "red", xlab = "individual", ylab = "weight (kg)")
 lines(1:length(df[,7]), df[,7], pch=18, col = "blue", type = "b", lty=2)
 legend("topleft", legend=c("Before", "After"), col=c("red", "blue"), lty = 1:2, cex=0.8)
 ```
+We see the trend that the weights after 6 weeks of diet are lower for nearly all individuals. To test whether this trend is significant, we can apply a paired t-test as follows:
 ```{r}
 t.test(df[,5], df[,7], paired=TRUE)
 ```
-Therefore diet does have an effect on weight loss.
+A p-value < 2.2e-16 indicates that diet does indeed have a significant effect on weight loss, with an estimated average loss of 3.845kg over the 6 week period.
 
-Now check assumptions (normality)
+To check the assumptions of the test, we need to verify that the difference between *preweight* and *weight6weeks* (ie. *weight.lost*) follows a normal distribution.
 ```{r}
+par(mfrow=c(1, 2))
 hist(df[,8])
-```
-```{r}
 qqnorm(df[,8])
 ```
 ```{r}
 shapiro.test(df[,8])
 ```
-Data is normal :)
+Looking at the shape of the Q-Q plot and histogram as well as the result of the result of the Shapiro-Wilk normality test, we can conclude that *weight.lost* follows a normal distribution. Thus the test assumptions are valid.
 
 **b)**
 Format data
