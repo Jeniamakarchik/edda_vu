@@ -435,31 +435,36 @@ print('Y ~ N + K + block*P')
 anova(npklm2)
 ```
 ```{r}
-print('Y ~ P + N + block*K')
+print('Y ~ N + P + block*K')
 anova(npklm3)
 ```
 
 ```{r}
-print('Y ~ P + K + N + block')
+print('Y ~ block + N + P + K')
 anova(npklm4)
 ```
 
+We have tested interaction models as well as additive. All the possible interactions between *block* and soil additives are insignificant. Therefore our preference goes to additive model as it shows significance of independent factors. Moreover, it is shown that *P* is an insignificant factor for the analysis.
+
 ```{r}
-print('Y ~ P + K + N')
+npklm5 <- lm(yield~block + N + K, data=npk)
 anova(npklm5)
 ```
+We believe that the model presented above is the best one, since all the factors are significant. But to examine further we have checked the normality for additive model with all the factors and for the additive model without *P*.
 
-```{r}
-npklm6 <- lm(yield~block + N + K, data=npk)
-anova(npklm6)
+```{r, echo=FALSE}
+par(mfrow=c(1, 2))
+qqnorm(residuals(npklm4))
+plot(fitted(npklm4), residuals(npklm4))
 ```
 
-```{r}
-npklm7 <- lm(yield~P*N*K, data=npk)
-anova(npklm7)
+```{r, echo=FALSE}
+par(mfrow=c(1, 2))
+qqnorm(residuals(npklm5))
+plot(fitted(npklm5), residuals(npklm5))
 ```
 
-We keep additive model for all factors, since pair-wise interactions were insignificant for all the factors. This model is our favorite as it shows also significance of each factor.
+Since we cannot assume normality for the model without *P* factor, we are going to stick with the additive model which contains all the presented factors.
 
 
 **e)**
@@ -471,4 +476,4 @@ npklmer1 <- lmer(yield~(1|block), REML=FALSE, data=npk)
 anova(npklmer1, npklmer)
 ```
 
-Nitrogen has a significant effect. 
+From the additional analysis can be seen that *N* has a significant effect on the *yield*, which supports what we found in the point **(c)**.
