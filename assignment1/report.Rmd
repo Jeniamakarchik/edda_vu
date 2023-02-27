@@ -22,30 +22,27 @@ knitr::opts_chunk$set(fig.height = 3)
 birthweight <- readLines("data/birthweight.txt")
 birthweight <- as.double(birthweight[2:length(birthweight)])
 birthweight
-```
 
-Sample mean:
-```{r}
 birthweight_mean <- mean(birthweight)
-birthweight_mean
 ```
 
 **a)** 
 
-```{r}
+Given the QQ-plot and the histogram below, the data appears to be normal.
+
+```{r, echo=FALSE}
 par(mfrow=c(1,2))
 qqnorm(y = birthweight)
 hist(birthweight)
 ```
-Given the QQ-plot and the histogram above, the data appears to be normal.
 
 To calculate the CI-96% in R:
 
 ```{r}
 t.test(birthweight, conf.level = 0.96)
 ```
-The ste is given by $ste = \frac{s}{\sqrt(n)}$, this way we can calculate *s* with the data already found, $51.7 = \frac{s}{\sqrt(188)}$, which gives us $s=708.87$. In order to mazimixe ste at 24.39, we can plug this into the ste formula to find the new *n*, such that, $24.39 = \frac{708.87}{\sqrt(n)}$, giving us $n=844.71$. 
-With a 96% CI, we get [2808-3019]. In order to decrease this range to 100, we can reverse the calculations in order to check the required sample size. CI is given by $\left[\bar{X}-t_{\alpha / 2} \frac{s}{\sqrt{n}}, \bar{X}+t_{\alpha / 2} \frac{s}{\sqrt{n}}\right]$. Thus we can conclude that $t_{\alpha / 2} \frac{s}{\sqrt{n}} \leq 50$. From the data we can determine that $s=698$ and $t_{0.04 / 2} = 2.07$ (for 96% CI), and thus solve for $n$ as follows:
+
+This gives a 96% CI of [2808-3019] with $\mu = 2913$. In order to decrease this range to 100, we can reverse the calculations in order to check the required sample size. CI is given by $\left[\bar{X}-t_{\alpha / 2} \frac{s}{\sqrt{n}}, \bar{X}+t_{\alpha / 2} \frac{s}{\sqrt{n}}\right]$. Thus we can conclude that $t_{\alpha / 2} \frac{s}{\sqrt{n}} \leq 50$. From the data we can determine that $s=698$ and $t_{0.04 / 2} = 2.07$ (for 96% CI), and thus solve for $n$ as follows:
 
 
 ```{r}
@@ -54,12 +51,10 @@ t_02 = qt(1-0.02,df=188-1) # 2.07
 (n = (t_02 * s / 50)^2)
 ```
 
-Therefore, a sample size of approximately 832 babies would be needed in order to have a 96% CI with a range of 100.
+Therefore, a sample size of approximately 832 babies would be needed in order to have a 96% CI with a range of 100. We can also use the bootstrap method to calculate the 96% CI as follows:
 
 ```{r}
-B <- 1000
-alpha <- 0.04
-T_star <- numeric(B)
+B <- 1000; alpha <- 0.04; T_star <- numeric(B)
 
 for(i in 1:B) {
   X_star <- sample(birthweight, replace = TRUE)
@@ -71,28 +66,21 @@ T_star_q98 <- quantile(T_star, 1 - alpha/2)
 
 c(2*birthweight_mean - T_star_q98, 2*birthweight_mean - T_star_q2)
 ```
-The CI in this case is very similar to the previous one, only changing the lower bound by 1.
+The CI in this case is very similar to the previous one.
 
 **b)**
-
-$$H_0 = \mu =< 2800$$
-$$H_1 = \mu > 2800$$
+For the experts claim the hypotheses can be formulated as follows: $H_0: \mu \leq 2800$, $H_1: \mu > 2800$
 
 ```{r}
 t.test(birthweight, alternative = "greater", mu=2800)
 ```
-As *p* is smaller than 0.05, we reject the null hypothesis, supporting the claim made by the expert. 
-The CI is infinite on the right side, since the test is one-sided.
-
-For a sign test, we can use:
+As *p* is smaller than 0.05, we reject the null hypothesis, supporting the claim made by the expert. The CI is infinite on the right side, since the test is one-sided, meaning that there is a 95% chance that the estimated mean is greater than 2829. For a sign test, we can use:
 
 ```{r}
 greater_weight <- as.integer(birthweight > 2800)
 binom.test(sum(greater_weight), length(greater_weight), p=0.5, alt="g")
 ```
-We again reject $H_0$, accepting $H_1$, that mean of the sample is bigger than 2800. 
-
-Both test confirmed the hypothesis that the mean of the sample is bigger than 2800.
+We again reject $H_0$, accepting $H_1$, that median of the sample is bigger than 2800. Since the data appears symmetric, we assume that the mean and median are the same.
 
 **c)** 
 To compute the powers of both tests, we can assume that the data we have was sampled from a normal distribution with the same variance and $\mu = 2900$. We can then compute the probability of each test correctly rejecting $H_0: \mu \leq 2800$ as follows. To better approximate the current situation, we will choose a sample size of $n = 188$ newborn babies.
@@ -108,14 +96,9 @@ for(i in 1:B) {
 }
 ```
 
-T-test power:
+T-test and sign test powers:
 ```{r}
-sum(pttest<0.05)/B
-```
-
-Sign test power:
-```{r}
-sum(psign<0.05)/B
+c(sum(pttest<0.05)/B, sum(psign<0.05)/B)
 ```
 We see that the power of the t-test is higher than that of the sign test. This makes sense because the sign test discards valuable information when considering only the signs, while the t-test is designed to test normal distributions, which is the case here.
 
@@ -124,15 +107,13 @@ We see that the power of the t-test is higher than that of the sign test. This m
 
 ```
 
-**e)** 
-
-
-$$H_0 = P_{male} - P_{female} = 0$$
-$$H_1 = P_{male} - P_{female} \neq 0$$
+**e)**
+The hypotheses can be formulated as follows: $H_0: P_{male} - P_{female} = 0$, $H_1: P_{male} - P_{female} \neq 0$
+We can use a proportion test to verify this claim.
 ```{r}
 prop.test(c(61, 65), c(95, 93))
 ```
-As the p-value is bigger than 0.05, we fail to reject the null-hypothesis, meaning that there is no true difference between the mean weight of males and females. 
+As the p-value is bigger than 0.05, we fail to reject the null-hypothesis, meaning that there is no true difference between the mean weight of male and female babies. 
 
 ## Exercise 2
 
@@ -142,20 +123,24 @@ head(df)
 ```
 
 **a)**
-```{r, echo=FALSE, fig.height=4}
-par(mfrow=c(2, 2))
-hist(df[, 1], main="Before", xlab="cholesterol level")
-hist(df[, 2], main="After", xlab="cholesterol level")
-qqnorm(df[, 1])
-qqnorm(df[, 2])
-```
+The data for *Before*, *After8weeks* and the difference between them all appear fairly normal.
+```{r, echo=FALSE, fig.height=7}
+# par(mfrow=c(2, 2))
+# hist(df[, 1], main="Before", xlab="cholesterol level")
+# hist(df[, 2], main="After", xlab="cholesterol level")
+# qqnorm(df[, 1])
+# qqnorm(df[, 2])
+par(mfrow=c(3, 2))
 
-```{r}
-shapiro.test(df[, 1])
-shapiro.test(df[, 2])
-```
+qqnorm(df[, 1], main="Q-Q plot for Before")
+hist(df[, 1], main="Histogram for Before", xlab="cholesterol level")
 
-As we can see from the plots and Shapiro test, the data is distributed normally.
+qqnorm(df[, 2], main="Q-Q plot for After")
+hist(df[, 2], xlab="cholesterol level", main="Q-Q plot for After")
+
+qqnorm(df[, 1] - df[, 2], main="Q-Q plot for Difference")
+hist(df[, 1] - df[, 2], xlab="cholesterol level", main="Q-Q plot for Difference")
+```
 
 <!-- ```{r, results='hide'} -->
 <!-- diffs <- df[, 1] - df[, 2] -->
@@ -168,15 +153,15 @@ As we can see from the plots and Shapiro test, the data is distributed normally.
 <!-- shapiro.test(diffs) -->
 <!-- ``` -->
 
-```{r, echo=FALSE, fig.height=4}
+Plotting the cholesterol levels before and after 8 weeks for every individual yeilds the following:
+```{r, echo=FALSE, fig.height=3.5}
 # Create a first line
 plot(1:length(df[, 1]), df[, 1], type = "b", pch=19, col = "red", xlab = "individual", ylab = "cholesterol")
 lines(1:length(df[, 2]), df[, 2], pch=18, col = "blue", type = "b", lty=2)
 legend("topleft", legend=c("Before", "After"), col=c("red", "blue"), lty = 1:2, cex=0.8)
 ```
 
-We draw the data as lines to see if there any consistences in data such as data incompleteness, outliers or meaningless data points.
-
+There is a general trend that the cholesterol levels tend to decrease after 8 weeks. Individual 10 decreases less than the others. We can test whether *Before* and *After8weeks* are correlated as follows:
 
 ```{r}
 cor.test(df[, 1], df[, 2], method="pearson")
@@ -184,61 +169,53 @@ cor.test(df[, 1], df[, 2], method="pearson")
 From the result of Pearson's test we can conclude that data before and data after are strongly correlated.
 
 **b)**
-Data is paired since it is  two different measurements of the same person and two samples are correlated.
+The data is paired since it is two different measurements on the same person, which also explains why they are correlated.
 
-In order to investigate has the diet affected individuals, we are going to apply tests (Paired t-test and Permutation test) that check difference between mean of different samples. Permutation test is applicable because it doesn't take normality into account and we are only testing for a difference between means, not how they relate to each other.
+In order to investigate whether diet has an effect, we are going to apply two tests (Paired t-test and Permutation test) that check the difference between the means of different samples. Permutation test is applicable because it doesn't take normality into account and we are only testing for a difference between means, not how they relate to each other. First we apply the t-test as follows:
 
 ```{r}
-t.test(df[, 1], df[, 2], paired=2)
+t.test(df[, 1], df[, 2], paired=TRUE)
 ```
-Based on p-value obtained for paired T-test we reject null-hypothesis that samples have the same mean. Hence, there is a difference between these two samples.
+Based on p-value obtained for paired T-test we reject null-hypothesis that samples have the same mean. Hence, there is a difference between these two samples. Next we apply the permutation test as follows:
 
-```{r}
+```{r, fig.height=4}
 diff_mean <- function(x, y) {
   return(mean(x-y))
 }
 
 stats <- diff_mean(df[, 1], df[, 2])
 
-B <- 1000
-t_star <- numeric(B)
+B <- 1000; t_star <- numeric(B)
 
 for (i in 1:B) {
   diff_star <- t(apply(cbind(df[, 1], df[, 2]), 1, sample))
   t_star[i] <- diff_mean(diff_star[, 1], diff_star[, 2])
 }
 
-hist(t_star, main="Histogram of statistics", xlab="values")
-lines(rep(stats, 2), c(0, 50), col="red", lwd=2)
-```
-```{r}
-# calculating p-value
 pl <- sum(t_star < stats) / B
 pr <- sum(t_star > stats) / B
 
-p <- 2*min(pl, pr)
-print(paste("P-value =", p))
+(p <- 2*min(pl, pr))
 ```
 
-We rejecting the null hypothesis that there is no difference between two samples.
+This gives $p=0$, and thus we reject the null hypothesis, again concluding that the diet has a significant effect.
 
 **c)**
-We have sample $x_i \in R[3, \theta]$, $i=\overline{1, 18}$, $\theta>3$. Analytic mean for this distribution will be $\mu = \frac{3 + \theta}{2}$.
+We have sample $x_i \in Unif[3, \theta]$, $i=\overline{1, 18}$, $\theta>3$. Analytic mean for this distribution will be $\mu = \frac{3 + \theta}{2}$.
 
-We can estimate the mean and the standard distribution using our sample.
+Using our sample, we can estimate the mean to be $\hat{\mu} = 5.78$ and the standard deviation to be $s = 1.1$.
 ```{r, echo=FALSE}
 mu <- mean(df[, 2])
 s <- sd(df[, 2])
-mu; s
 ```
 
-From this value we can obtain the estimation for the parameter $\theta$. Knowing $\hat{\mu}$   $\hat{\theta} = 2*\hat{\mu} - 3$.
+Since we know that $\hat{\theta} = 2*\hat{\mu} - 3$, we can now solve for $\hat{\theta} = 8.556$.
 ```{r, echo=FALSE}
 theta_hat <- 2*mu - 3
-print(paste("theta_hat =", theta_hat))
+# print(paste("theta_hat =", theta_hat))
 ```
 
-Then, using Central Limit Theorem, we can obtain confidence interval for parameter $\theta$:
+Then, using Central Limit Theorem, we can obtain the confidence interval for parameter $\theta$:
 $$[t_{-\frac{\alpha}{2}}\frac{s}{\sqrt{n}} + \frac{\theta + 3}{2}, t_{\frac{\alpha}{2}}\frac{s}{\sqrt{n}} + \frac{\theta + 3}{2}]$$
 
 ```{r}
@@ -251,10 +228,10 @@ theta_r <- theta_hat + t_alpha*s/sqrt(n)
 
 c(theta_l, theta_r)
 ```
-We can improve the CI by having more individuals in the samples, as increasing in parameter *n* causes decreasing in standard deviation for sample of means. We can improve since we know the distribution and we know the estimation for theta.
+We can improve the CI by having more individuals in the samples, as increasing in parameter *n* causes decreasing in standard deviation for sample of means. Yes, we can improve the this CI because we know that we are sampling from a uniform distribution, and that we are estimating the upper bound $\theta$. This means we can use a one-sided CI, which allows us to narrow the right side of the interval.
 
 **d)** 
-
+We can apply the bootstrap test as follows:
 ```{r}
 t <- max(df[, 2]); n <- length(df[, 2])
 
@@ -283,18 +260,17 @@ ks.test(df[, 2], runif(100000, min = 3, max = 8))
 P-value = 0.4, so we accept null hypothesis and can confirm that the sample was drown from  $U(3, \theta)$.
 
 **e)**
-We are using sign test to test if the median of the cholesterol level is $\l 6$.
+We are using sign test to test if the median of the cholesterol level is less than 6.
 ```{r}
 less_chol <- as.integer(df[, 2] < 6)
 binom.test(sum(less_chol), length(less_chol), p=0.5, alt="g")
 ```
-P-value for the test equals 0.2 which rejects alternative hypothesis.
-
-proportion tests
+P-value for the test equals 0.2 which rejects alternative hypothesis. The next claim can be tested as follows:
 ```{r}
 less_chol <- as.integer(df[, 2] < 4.5)
 binom.test(sum(less_chol),length(less_chol),p=0.25, alt="l")
 ```
+With a p-value of 0.3, we reject the claim that the fraction of the cholesterol levels after 8 weeks of low fat diet less than 4.5 is at most 25%.
 
 ## Exercise 3
 We can compute and add the variable *weight.lost* as follows:
@@ -304,32 +280,33 @@ df["weight.lost"] <- df["preweight"] - df["weight6weeks"]
 head(df)
 ```
 **a)**
-To visualize the effect of diet on weight lost, we can plot the weights before and after the diets for every individual.
-```{r, echo=FALSE}
+To visualize the effect of diet on weight lost, we can plot the weights before and after the diets for every individual. \
+
+```{r, echo=FALSE, fig.height=5}
 plot(1:length(df[,5]), df[,5], type = "b", pch=19, col = "red", xlab = "individual", ylab = "weight (kg)")
 lines(1:length(df[,7]), df[,7], pch=18, col = "blue", type = "b", lty=2)
 legend("topleft", legend=c("Before", "After"), col=c("red", "blue"), lty = 1:2, cex=0.8)
 ```
+\
 We see the trend that the weights after 6 weeks of diet are lower for nearly all individuals. To test whether this trend is significant, we can apply a paired t-test as follows:
 ```{r}
 t.test(df[,5], df[,7], paired=TRUE)
 ```
-A p-value < 2.2e-16 indicates that diet does indeed have a significant effect on weight loss, with an estimated average loss of 3.845kg over the 6 week period.
+A p-value < 2.2e-16 indicates that diet does indeed have a significant effect on weight loss, with an estimated average loss of 3.84kg over the 6 week period.
 
 To check the assumptions of the test, we need to verify that the difference between *preweight* and *weight6weeks* (ie. *weight.lost*) follows a normal distribution.
+
 ```{r, echo=FALSE}
 par(mfrow=c(1, 2))
 hist(df[,8])
 qqnorm(df[,8])
 ```
 
-```{r}
-shapiro.test(df[,8])
-```
-Looking at the shape of the Q-Q plot and histogram as well as the result of the result of the Shapiro-Wilk normality test, we can conclude that *weight.lost* follows a normal distribution. Thus the test assumptions are valid.
+Looking at the shape of the Q-Q plot and histogram, we can conclude that *weight.lost* follows a normal distribution. Thus, the test assumptions are valid.
 
 **b)**
-Format data
+We can apply the one-way ANOVA as follows:
+
 ```{r}
 df$diet <- as.factor(df$diet)
 dietaov=lm(weight.lost~diet,data=df)
@@ -337,8 +314,9 @@ anova(dietaov)
 summary(dietaov)
 ```
 
-From the ANOVA table, we can see that p = 0.0032, meaning that the effect of diet on weight loss is significant. From the summary table, we can see that diet 2 is worse than diet 1, however, this difference is not significant. Furthermore, we can see that diet 3 is better than diet 1 and that this difference is significant with a p=0.0075. Therefore, diet 3 is the best diet. 
-```{r}
+From the ANOVA table, we can see that p = 0.0032, meaning that the effect of diet on weight loss is significant. From the summary table, we can see that diet 2 is worse than diet 1, however, this difference is not significant. Furthermore, we can see that diet 3 is better than diet 1 and that this difference is significant with a p=0.0075. Therefore, diet 3 is the best diet.
+
+```{r, echo=FALSE}
 par(mfrow=c(1,2))
 qqnorm(residuals(dietaov))
 plot(fitted(dietaov), residuals(dietaov))
@@ -353,7 +331,7 @@ kruskal.test(df$weight.lost, df$diet)
 This supports the ANOVA result as the p-value is smaller than 0.05.
 
 **c)**
-
+We can apply the two-way ANOVA as follows:
 ```{r}
 df$gender <- as.factor(df$gender)
 dietgenderaov <- lm(weight.lost~gender*diet,data=df)
@@ -364,22 +342,19 @@ From this table we can see that gender does not have an effect of its own, howev
 ```{r}
 summary(dietgenderaov)
 ```
+The confirms that diet 3 has the biggest effect and is significant. The interaction plots are shown below:
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, fig.height=5}
 par(mfrow=c(1, 2))
-interaction.plot(df$gender, df$diet, df$weight.lost)
-interaction.plot(df$diet, df$gender, df$weight.lost)
+interaction.plot(df$gender, df$diet, df$weight.lost, legend=FALSE, xlab = "gender", ylab = "mean weight loss")
+legend("topright", c("3", "2", "1"), title="Diet", lwd=1, lty=c(1, 2, 3))
+
+interaction.plot(df$diet, df$gender, df$weight.lost, legend=FALSE, xlab = "diet", ylab = "mean weight loss")
+legend("topleft", c("0", "1"), title="Gender", lwd=1, lty=c(2, 1))
 ```
 
-Assumption: diet depends on gender, we can see that effect of diet varies for women.
+These graphs suggesst that diet interacts with gender since the lines are not parallel. Finally, we check the model assumptions:
 
-```{r}
-genderaov <- lm(weight.lost~gender,data=df)
-anova(genderaov)
-summary(genderaov)
-```
-
-AS has also been shown in the previous ANOVA table, gender does not have an effect on weight loss on its own. It only has an effect when taking diet into account.
 ```{r, echo=FALSE}
 par(mfrow=c(1, 2))
 qqnorm(residuals(dietgenderaov))
@@ -387,12 +362,12 @@ plot(fitted(dietgenderaov), residuals(dietgenderaov))
 ```
 The residuals and QQ-plot of the gender and diet plot do not appear to be normally distributed, which violates our assumptions about normality. Therefore, one must take our previous results with caution. 
 
-**d)** Skipped, as instructed.
-
 **e)**
-We prefer the model from *b* as *c* looks irrelevant for the weight loss and violates the needed assumptions. 
+We prefer the model from *b* as in *c* gender looks irrelevant for the weight loss and violates the needed assumptions. 
 ```{r}
-c(dietaov$coefficients[1], dietaov$coefficients[1] + dietaov$coefficients[2], dietaov$coefficients[1] + dietaov$coefficients[3])
+c(dietaov$coefficients[1], 
+  dietaov$coefficients[1] + dietaov$coefficients[2], 
+  dietaov$coefficients[1] + dietaov$coefficients[3])
 ```
 An average person would lose approximately 3 kg for both diet 1 and 2, while losing approximately 5 kg for diet 3. 
 
@@ -402,8 +377,6 @@ An average person would lose approximately 3 kg for both diet 1 and 2, while los
 ```{r, include=FALSE}
 require("MASS")
 ```
-
-
 
 ```{r}
 B <- 6; P <- 4; T <- 3
@@ -453,7 +426,6 @@ anova(lm)
 ```
 Using the additive model we see that both *block* and *N* are still significant. Finally, we are going to check the model assumptions about normality of residuals.
 
-
 ```{r, echo=FALSE}
 par(mfrow=c(1, 2))
 qqnorm(residuals(lm))
@@ -464,39 +436,33 @@ The residuals and the Q-Q plot appear fairly normal.
 Lastly, we cannot use Friedman test as we have two observations for each combination of soil additives.
 
 **d)**
+We can investigate the pairwise interactions of $N$, $P$ and $K$ with $block$ as follows:
 ```{r}
 npklm1 <- lm(yield~P + K + block*N, data=npk)
 npklm2 <- lm(yield~N + K + block*P, data=npk)
 npklm3 <- lm(yield~N + P + block*K, data=npk)
 npklm4 <- lm(yield~block + N + P + K, data=npk)
-npklm5 <- lm(yield~N + P + K, data=npk)
 ```
 
+Model 1: Y ~ P + K + block*N
 ```{r}
-print('Y ~ P + K + block*N')
 anova(npklm1)
 ```
+Model 2: Y ~ N + K + block*P
 ```{r}
-print('Y ~ N + K + block*P')
 anova(npklm2)
 ```
+Model 3: Y ~ N + P + block*K
 ```{r}
-print('Y ~ N + P + block*K')
 anova(npklm3)
 ```
 
+Model 4: Y ~ block + N + P + K
 ```{r}
-print('Y ~ block + N + P + K')
 anova(npklm4)
 ```
 
-We have tested interaction models as well as additive. All the possible interactions between *block* and soil additives are insignificant. Therefore our preference goes to additive model as it shows significance of independent factors. Moreover, it is shown that *P* is an insignificant factor for the analysis.
-
-```{r}
-npklm5 <- lm(yield~block + N + K, data=npk)
-anova(npklm5)
-```
-We believe that the model presented above is the best one, since all the factors are significant. But to examine further we have checked the normality for additive model with all the factors and for the additive model without *P*.
+We have tested interaction models as well as purely additive. All the possible interactions between *block* and soil additives are insignificant. Therefore our preference goes to the purely additive model (Model 4) as it shows the significance of independent factors with no interactions, revealing that they are all significant except *P*. Finally, we can check this model's assumptions:
 
 ```{r, echo=FALSE}
 par(mfrow=c(1, 2))
@@ -504,22 +470,12 @@ qqnorm(residuals(npklm4))
 plot(fitted(npklm4), residuals(npklm4))
 ```
 
-```{r, echo=FALSE}
-par(mfrow=c(1, 2))
-qqnorm(residuals(npklm5))
-plot(fitted(npklm5), residuals(npklm5))
-```
-
-Since we cannot assume normality for the model without *P* factor, we are going to stick with the additive model which contains all the presented factors.
-
-
 **e)**
-
+Treating *block* as a random effect, we get the following:
 ```{r}
 require(lme4)
 npklmer <- lmer(yield~N+(1|block), REML=FALSE, data=npk)
 npklmer1 <- lmer(yield~(1|block), REML=FALSE, data=npk)
 anova(npklmer1, npklmer)
 ```
-
-From the additional analysis can be seen that *N* has a significant effect on the *yield*, which supports what we found in the point **(c)**.
+From the additional analysis can be seen that *N* has a significant effect on the *yield*, which supports what we found in **(c)**.
