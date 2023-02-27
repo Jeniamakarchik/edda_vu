@@ -252,35 +252,35 @@ less_chol <- as.integer(df[, 2] < 4.5)
 binom.test(sum(less_chol),length(less_chol),p=0.25, alt="l")
 ```
 ## Exercise 3
-
+We can compute and add the variable *weight.lost* as follows:
 ```{r}
 df <- as.data.frame(read.table("data/diet.txt", header=TRUE))
 df["weight.lost"] <- df["preweight"] - df["weight6weeks"]
 head(df)
 ```
 **a)**
+To visualize the effect of diet on weight lost, we can plot the weights before and after the diets for every individual.
 ```{r}
-# Create a first line
 plot(1:length(df[,5]), df[,5], type = "b", pch=19, col = "red", xlab = "individual", ylab = "weight (kg)")
 lines(1:length(df[,7]), df[,7], pch=18, col = "blue", type = "b", lty=2)
 legend("topleft", legend=c("Before", "After"), col=c("red", "blue"), lty = 1:2, cex=0.8)
 ```
+We see the trend that the weights after 6 weeks of diet are lower for nearly all individuals. To test whether this trend is significant, we can apply a paired t-test as follows:
 ```{r}
 t.test(df[,5], df[,7], paired=TRUE)
 ```
-Therefore diet does have an effect on weight loss.
+A p-value < 2.2e-16 indicates that diet does indeed have a significant effect on weight loss, with an estimated average loss of 3.845kg over the 6 week period.
 
-Now check assumptions (normality)
+To check the assumptions of the test, we need to verify that the difference between *preweight* and *weight6weeks* (ie. *weight.lost*) follows a normal distribution.
 ```{r}
+par(mfrow=c(1, 2))
 hist(df[,8])
-```
-```{r}
 qqnorm(df[,8])
 ```
 ```{r}
 shapiro.test(df[,8])
 ```
-Data is normal :)
+Looking at the shape of the Q-Q plot and histogram as well as the result of the result of the Shapiro-Wilk normality test, we can conclude that *weight.lost* follows a normal distribution. Thus the test assumptions are valid.
 
 **b)**
 Fromat data
