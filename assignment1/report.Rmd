@@ -44,8 +44,9 @@ To calculate the CI-96% in R:
 ```{r}
 t.test(birthweight, conf.level = 0.96)
 ```
-
+The ste is given by $ste = \frac{s}{\sqrt(n)}$, this way we can calculate *s* with the data already found, $51.7 = \frac{s}{\sqrt(188)}$, which gives us $s=708.87$. In order to mazimixe ste at 24.39, we can plug this into the ste formula to find the new *n*, such that, $24.39 = \frac{708.87}{\sqrt(n)}$, giving us $n=844.71$. 
 With a 96% CI, we get [2808-3019]. In order to decrease this range to 100, we can reverse the calculations in order to check the required sample size. CI is given by $\left[\bar{X}-t_{\alpha / 2} \frac{s}{\sqrt{n}}, \bar{X}+t_{\alpha / 2} \frac{s}{\sqrt{n}}\right]$. Thus we can conclude that $t_{\alpha / 2} \frac{s}{\sqrt{n}} \leq 50$. From the data we can determine that $s=698$ and $t_{0.04 / 2} = 2.07$ (for 96% CI), and thus solve for $n$ as follows:
+
 
 ```{r}
 s = sd(birthweight) # 698
