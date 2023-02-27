@@ -90,11 +90,30 @@ We again reject $$H_0$$, accepting $$H_1$$, that mean of the sample is bigger th
 Both test confirmed the hypothesis that the mean of the sample is bigger than 2800.
 
 **c)** 
+To compute the powers of both tests, we can assume that the data we have was sampled from a normal distribution with the same variance and $\mu = 2900$. We can then compute the probability of each test correctly rejecting $H_0: \mu \leq 2800$ as follows. To better approximate the current situation, we will choose a sample size of $n = 188$ newborn babies.
 ```{r}
-library(pwr)
+# library(pwr)
 #pwr.t.test(n=188,d=NULL,sig.level=0.05,type="one.sample",alternative="greater")
 
+B=1000; n=188 ; mu = 2900; stdev = sd(birthweight);
+psign=numeric(B)
+pttest=numeric(B)
+for(i in 1:B) {
+  x=rnorm(n, mean=mu, sd=stdev)
+  pttest[i]=t.test(x, alternative = "g", mu=2800)[[3]]
+  psign[i]=binom.test(sum(x>2800), n, p=0.5)[[3]]
+}
 ```
+
+t-test power
+```{r}
+sum(pttest<0.05)/B
+```
+sign test power
+```{r}
+sum(psign<0.05)/B
+```
+We see that the power of the t-test is higher than that of the sign test. This makes sense because the sign test discards valuable information when considering only the signs, while the t-test is designed to test normal distributions, which is the case here.
 
 **d)**  
 ```{r}
