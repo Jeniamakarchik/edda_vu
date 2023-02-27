@@ -384,8 +384,8 @@ We should take block into accountance since different plots in blocks have diffe
 
 **c)**
 ```{r}
-# We do plus as we don't care about interactions
-npk2anova <- lm(yield~block+N, data=npk)
+# We do plus as we don't care about interactions ---> actually I think we do
+npk2anova <- lm(yield~block*N, data=npk)
 anova(npk2anova)
 ```
 
@@ -398,4 +398,25 @@ Changes in blocks are not significant so we can consider that block variable doe
 Friedman test:
 - we have two observation for each combination
 - we can't use it
-**)**
+
+**d)**
+```{r}
+npklm1 <- lm(yield~P + K + block*N, data=npk)
+npklm2 <- lm(yield~N + K + block*P, data=npk)
+npklm3 <- lm(yield~N + P + block*K, data=npk)
+
+anova(npklm1)
+anova(npklm2)
+anova(npklm3)
+```
+
+**e)**
+
+```{r}
+library(lme4)
+npklmer <- lmer(yield~N+(1|block), REML=FALSE, data=npk)
+npklmer1 <- lmer(yield~(1|block), REML=FALSE, data=npk)
+anova(npklmer1, npklmer)
+```
+
+Nitrogen has a significant effect. 
