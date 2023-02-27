@@ -131,64 +131,70 @@ prop.test(c(61, 65), c(95, 93))
 As the p-value is bigger than 0.05, we fail to reject the null-hypothesis, meaning that there is no true difference between the mean weight of males and females. 
 
 ## Exercise 2
-A study tested whether cholesterol was reduced after using a certain brand of margarine as part of a low fat low cholesterol diet. The data set cholesterol.txt contains information on 18 people using margarine to reduce cholesterol: columns Before and After8weeks contain the cholesterol level (mmol/L) respectively before the diet and after 8 weeks on the diet.
 
-```{r}
+```{r, include=FALSE}
 df <- as.data.frame(read.table("data/cholesterol.txt", header=TRUE))
 head(df)
 ```
 
-
-**a)** Make some relevant plots of this data set, comment on normality. Are there any inconsistencies in the data? Investigate whether the columns Before and After8weeks are correlated.
-```{r}
-diffs <- df[, 1] - df[, 2]
-diffs
-qqnorm(diffs)
+**a)**
+```{r, results='hide'}
+par(mfrow=c(2, 2))
+hist(df[, 1], main="Before", xlab="cholesterol level")
+hist(df[, 2], main="After", xlab="cholesterol level")
+qqnorm(df[, 1])
+qqnorm(df[, 2])
 ```
-
-```{r}
-hist(diffs)
-```
-```{r}
-shapiro.test(diffs)
-```
-Differences are normally distributed.
 
 ```{r}
 shapiro.test(df[, 1])
 shapiro.test(df[, 2])
 ```
-```{r}
-cor.test(df[, 1], df[, 2], method="pearson")
-```
 
-```{r}
+As we can see from the plots and Shapiro test, the data is distributed normally.
+
+# ```{r, results='hide'}
+# diffs <- df[, 1] - df[, 2]
+# par(mfrow=c(1, 2))
+# qqnorm(diffs)
+# hist(diffs)
+# ```
+
+# ```{r, echo=TRUE}
+# shapiro.test(diffs)
+# ```
+
+```{r, echo=FALSE}
 # Create a first line
 plot(1:length(df[, 1]), df[, 1], type = "b", pch=19, col = "red", xlab = "individual", ylab = "cholesterol")
 lines(1:length(df[, 2]), df[, 2], pch=18, col = "blue", type = "b", lty=2)
 legend("topleft", legend=c("Before", "After"), col=c("red", "blue"), lty = 1:2, cex=0.8)
 ```
 
-**b)** Apply two relevant tests (cf. Lectures 2, 3) to verify whether the diet with low fat margarine has an effect (argue whether the data are paired or not). Is a permutation test applicable?
+We draw the data as lines to see if there any consistences in data such as data incompleteness, outliers or meaningless data points.
 
-Data is paired since it is two different measurements of the same person and two samples are correlated.
-Relevant test:
 
-1. T-test paired test
+```{r}
+cor.test(df[, 1], df[, 2], method="pearson")
+```
+From the result of Pearson's test we can conclude that data before and data after are strongly correlated.
+
+**b)**
+Data is paired since it is  two different measurements of the same person and two samples are correlated.
+
+In order to investigate has the diet affected individuals, we are going to apply tests (Paired t-test and Permutation test) that check difference between mean of different samples. Permutation test is applicable because it doesn't take normality into account and we are only testing for a difference between means, not how they relate to each other.
+
 ```{r}
 t.test(df[, 1], df[, 2], paired=2)
 ```
--> based on p-value we reject null-hypothesis that samples have the same mean. there is a difference between these two samples.
+Based on p-value obtained for paired T-test we reject null-hypothesis that samples have the same mean. Hence, there is a difference between these two samples.
 
-2. Permutation test - it is applicable because we are only testing for a difference between mean, not how they relate to each other.
 ```{r}
 diff_mean <- function(x, y) {
   return(mean(x-y))
 }
 
-# original dataframe
 stats <- diff_mean(df[, 1], df[, 2])
-stats
 
 B <- 1000
 t_star <- numeric(B)
@@ -198,8 +204,7 @@ for (i in 1:B) {
   t_star[i] <- diff_mean(diff_star[, 1], diff_star[, 2])
 }
 
-hist(t_star)
-# plot(rep(stats, 2), c(0, 50), col="red", lwd=2)
+hist(t_star, main="Histogram of statistics", xlab="values")
 lines(rep(stats, 2), c(0, 50), col="red", lwd=2)
 ```
 ```{r}
@@ -208,42 +213,46 @@ pl <- sum(t_star < stats) / B
 pr <- sum(t_star > stats) / B
 
 p <- 2*min(pl, pr)
-p
+print(paste("P-value =", p))
 ```
 
+We rejecting the null hypothesis that there is no difference between two samples.
+
 **c)**
-$\mu = (\theta + 3) / 2, \theta > 3$
-```{r}
+We have sample $x_i \in R[3, \theta]$, $i=\overline{1, 18}$, $\theta>3$. Analytic mean for this distribution will be $\mu = \frac{3 + \theta}{2}$.
 
+We can estimate the mean and the standard distribution using our sample.
+```{r, echo=FALSE}
 mu <- mean(df[, 2])
-mu # bar{x}
-
 s <- sd(df[, 2])
-s
+print(paste("mu =", mu, "s =", s))
+```
 
+From this value we can obtain the estimation for the parameter $\theta$. Knowing $\hat{\mu}$   $\hat{\theta} = 2*\hat{\mu} - 3$.
+```{r, echo=FALSE}
 theta_hat <- 2*mu - 3
-theta_hat
+print(paste("theta_hat =", theta_hat))
+```
 
+Then, using Central Limit Theorem, we can obtain confidence interval for parameter $\theta$:
+$$[t_{-\frac{\alpha}{2}}\frac{s}{\sqrt{n}} + \frac{\theta + 3}{2}, t_{\frac{\alpha}{2}}\frac{s}{\sqrt{n}} + \frac{\theta + 3}{2}]$$
+
+```{r}
 alpha <- 0.05
 
 n <- length(df[, 2])
 t_alpha <- qt(1 - alpha/2, df=n)
-t_alpha
-
 theta_l <- theta_hat - t_alpha*s/sqrt(n)
 theta_r <- theta_hat + t_alpha*s/sqrt(n)
-c("[", theta_l,",", theta_r, "]")
+
+print(paste0("95% confidence interval: [", theta_l,", ", theta_r, "]"))
 ```
-We can improve the CI by having more individuals in the samples. We can improve since we know the distribution and we know the estimation for theta.
+We can improve the CI by having more individuals in the samples, as increasing in parameter *n* causes decreasing in standard deviation for sample of means. We can improve since we know the distribution and we know the estimation for theta.
 
 **d)** 
 
 ```{r}
-t <- max(df[, 2])
-t
-
-n <- length(df[, 2])
-n
+t <- max(df[, 2]); n <- length(df[, 2])
 
 for (theta in 3:12) {
   B <- 1000
@@ -258,20 +267,32 @@ for (theta in 3:12) {
   pr <- sum(t_star > t)/B
   
   p <- 2* min(pl, pr)
-  print(paste("Theta =", theta, ", ", p))
+  print(paste("Theta =", theta, ", ", p, "KS = "))
 }
 ```
+Using bootstrap we have values of $\theta = 8$ and $\theta = 9$ for which our null hypothesis is not rejected (p-value > 0.05).
+We can apply Kolmogorov-Smirnov test to examine the sample since it examine if two samples were drawn from the one distribution. We can generate sample from uniform distribution and apply test on them.
+
+```{r}
+ks.test(df[, 2], runif(100000, min = 3, max = 8))
+```
+P-value = 0.04, so we accept null hypothesis and can confirm that the sample was drown from  $U(3, \theta)$.
 
 **e)**
-Medium and proportion tests
+We are using sign test to test if the median of the cholesterol level is $\l 6$.
 ```{r}
 less_chol <- as.integer(df[, 2] < 6)
 binom.test(sum(less_chol), length(less_chol), p=0.5, alt="g")
 ```
+
+
+
+proportion tests
 ```{r}
 less_chol <- as.integer(df[, 2] < 4.5)
 binom.test(sum(less_chol),length(less_chol),p=0.25, alt="l")
 ```
+
 ## Exercise 3
 We can compute and add the variable *weight.lost* as follows:
 ```{r}
@@ -304,24 +325,25 @@ shapiro.test(df[,8])
 Looking at the shape of the Q-Q plot and histogram as well as the result of the result of the Shapiro-Wilk normality test, we can conclude that *weight.lost* follows a normal distribution. Thus the test assumptions are valid.
 
 **b)**
-Fromat data
+Format data
 ```{r}
 df$diet <- as.factor(df$diet)
 dietaov=lm(weight.lost~diet,data=df)
 anova(dietaov)
 summary(dietaov)
 ```
-The best diet is number 3. 
+From the ANOVA table, we can see that p = 0.0032, meaning that the effect of diet on weight loss is significant. From the summary table, we can see that diet 2 is worse than diet 1, however, this difference is not significant. Furthermore, we can see that diet 3 is better than diet 1 and that this difference is significant with a p=0.0075. Therefore, diet 3 is the best diet. 
 ```{r}
-# Checking assumptions
+par(mfrow=c(1,2))
 qqnorm(residuals(dietaov))
 plot(fitted(dietaov), residuals(dietaov))
 ```
+The data seems to be relatively normal, therefore, it is appropriate to use ANOVA. Generally, the Kruskal-Wallis test is used when the data does not meet the assumptions for ANOVA, even though the data meets the assumptions here, the Kruskal-Wallis can still be used:
 
 ```{r}
 kruskal.test(df$weight.lost, df$diet)
 ```
-This supports the ANOVA result.
+This supports the ANOVA result as the p-value is smaller than 0.05.
 
 **c)**
 
@@ -330,6 +352,7 @@ df$gender <- as.factor(df$gender)
 dietgenderaov <- lm(weight.lost~gender*diet,data=df)
 anova(dietgenderaov)
 ```
+From this table we can see that gender does not have an effect of its own, however, it interacts with diet to affect weight loss.
 
 ```{r}
 summary(dietgenderaov)
@@ -341,29 +364,32 @@ interaction.plot(df$gender, df$diet, df$weight.lost)
 interaction.plot(df$diet, df$gender, df$weight.lost)
 ```
 
-Assumption: diet depends on gender, we can see that effect of diet varies inside women.
+Assumption: diet depends on gender, we can see that effect of diet varies for women.
 
 ```{r}
 genderaov <- lm(weight.lost~gender,data=df)
 anova(genderaov)
 summary(genderaov)
 ```
-
+AS has also been shown in the previous ANOVA table, gender does not have an effect on weight loss on its own. It only has an effect when taking diet into account.
 ```{r}
 # Checking assumptions
 par(mfrow=c(1, 2))
 qqnorm(residuals(dietgenderaov))
 plot(fitted(dietgenderaov), residuals(dietgenderaov))
 ```
-Residuals do not look like something that is normally distributed, which violates our assumptions about normality and makes 
+The residuals and QQ-plot of the gender and diet plot do not appear to be normally distributed, which violates our assumptions about normality. Therefore, one must take our previous results with caution. 
+
+**d)** Skipped, as instructed.
 
 **e)**
-We prefer b) as c) looks irrelevant for the weight loss. 
+We prefer the model from *b* as *c* looks irrelevant for the weight loss and violates the needed assumptions. 
 ```{r}
 print(paste('Diet 1:', dietaov$coefficients[1]))
 print(paste('Diet 2:', dietaov$coefficients[1] + dietaov$coefficients[2]))
 print(paste('Diet 3:', dietaov$coefficients[1] + dietaov$coefficients[3]))
 ```
+An average person would lose approximately 3 kg for both diet 1 and 2, while losing approximately 5 kg for diet 3. 
 
 ## Exercise 4
 
