@@ -395,6 +395,8 @@ summary(npk2anova)
 
 Changes in blocks are not significant so we can consider that block variable doesn't affect
 
+<check model assumptions>
+
 Friedman test:
 - we have two observation for each combination
 - we can't use it
