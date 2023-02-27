@@ -44,9 +44,16 @@ To calculate the CI-96% in R:
 ```{r}
 t.test(birthweight, conf.level = 0.96)
 ```
-With a 96% CI, we get [2808-3019]. In order to decrease this range to 100, we can reverse the calculations in order to check the required sample size. CI is given by $\left[\bar{X}-t_{\alpha / 2} \frac{s}{\sqrt{n}}, \bar{X}+t_{\alpha / 2} \frac{s}{\sqrt{n}}\right]$. Thus we can conclude that $t_{\alpha / 2} \frac{s}{\sqrt{n}} < 50$. From the data we can determine that $s=708.87$ and $t_{0.04 / 2} = 2.05$ (for 96% CI), and we can use this solve for $n = 844.71$.
 
-Therefore, a sample size of approximately 845 babies would be needed in order to have a 96% CI with a range of 100.
+With a 96% CI, we get [2808-3019]. In order to decrease this range to 100, we can reverse the calculations in order to check the required sample size. CI is given by $\left[\bar{X}-t_{\alpha / 2} \frac{s}{\sqrt{n}}, \bar{X}+t_{\alpha / 2} \frac{s}{\sqrt{n}}\right]$. Thus we can conclude that $t_{\alpha / 2} \frac{s}{\sqrt{n}} \leq 50$. From the data we can determine that $s=698$ and $t_{0.04 / 2} = 2.07$ (for 96% CI), and thus solve for $n$ as follows:
+
+```{r}
+s = sd(birthweight) # 698
+t_02 = qt(1-0.02,df=188-1) # 2.07
+(n = (t_02 * s / 50)^2)
+```
+
+Therefore, a sample size of approximately 832 babies would be needed in order to have a 96% CI with a range of 100.
 
 ```{r}
 B <- 1000
