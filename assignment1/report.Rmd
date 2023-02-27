@@ -306,24 +306,25 @@ shapiro.test(df[,8])
 Looking at the shape of the Q-Q plot and histogram as well as the result of the result of the Shapiro-Wilk normality test, we can conclude that *weight.lost* follows a normal distribution. Thus the test assumptions are valid.
 
 **b)**
-Fromat data
+Format data
 ```{r}
 df$diet <- as.factor(df$diet)
 dietaov=lm(weight.lost~diet,data=df)
 anova(dietaov)
 summary(dietaov)
 ```
-The best diet is number 3. 
+From the ANOVA table, we can see that p = 0.0032, meaning that the effect of diet on weight loss is significant. From the summary table, we can see that diet 2 is worse than diet 1, however, this difference is not significant. Furthermore, we can see that diet 3 is better than diet 1 and that this difference is significant with a p=0.0075. Therefore, diet 3 is the best diet. 
 ```{r}
-# Checking assumptions
+par(mfrow=c(1,2))
 qqnorm(residuals(dietaov))
 plot(fitted(dietaov), residuals(dietaov))
 ```
+The data seems to be relatively normal, therefore, it is appropriate to use ANOVA. Generally, the Kruskal-Wallis test is used when the data does not meet the assumptions for ANOVA, even though the data meets the assumptions here, the Kruskal-Wallis can still be used:
 
 ```{r}
 kruskal.test(df$weight.lost, df$diet)
 ```
-This supports the ANOVA result.
+This supports the ANOVA result as the p-value is smaller than 0.05.
 
 **c)**
 
@@ -332,6 +333,7 @@ df$gender <- as.factor(df$gender)
 dietgenderaov <- lm(weight.lost~gender*diet,data=df)
 anova(dietgenderaov)
 ```
+From this table we can see that gender does not have an effect of its own, however, it interacts with diet to affect weight loss.
 
 ```{r}
 summary(dietgenderaov)
@@ -343,29 +345,32 @@ interaction.plot(df$gender, df$diet, df$weight.lost)
 interaction.plot(df$diet, df$gender, df$weight.lost)
 ```
 
-Assumption: diet depends on gender, we can see that effect of diet varies inside women.
+Assumption: diet depends on gender, we can see that effect of diet varies for women.
 
 ```{r}
 genderaov <- lm(weight.lost~gender,data=df)
 anova(genderaov)
 summary(genderaov)
 ```
-
+AS has also been shown in the previous ANOVA table, gender does not have an effect on weight loss on its own. It only has an effect when taking diet into account.
 ```{r}
 # Checking assumptions
 par(mfrow=c(1, 2))
 qqnorm(residuals(dietgenderaov))
 plot(fitted(dietgenderaov), residuals(dietgenderaov))
 ```
-Residuals do not look like something that is normally distributed, which violates our assumptions about normality and makes 
+The residuals and QQ-plot of the gender and diet plot do not appear to be normally distributed, which violates our assumptions about normality. Therefore, one must take our previous results with caution. 
+
+**d)** Skipped, as instructed.
 
 **e)**
-We prefer b) as c) looks irrelevant for the weight loss. 
+We prefer the model from *b* as *c* looks irrelevant for the weight loss and violates the needed assumptions. 
 ```{r}
 print(paste('Diet 1:', dietaov$coefficients[1]))
 print(paste('Diet 2:', dietaov$coefficients[1] + dietaov$coefficients[2]))
 print(paste('Diet 3:', dietaov$coefficients[1] + dietaov$coefficients[3]))
 ```
+An average person would lose approximately 3 kg for both diet 1 and 2, while losing approximately 5 kg for diet 3. 
 
 ## Exercise 4
 
