@@ -43,7 +43,9 @@ t.test(birthweight, conf.level = 0.96)
 ```
 With a 96% CI, we get [2808-3019]. In order to decrease this range to 100, we can reverse the calculations in order to check the required sample size. In order to get CI in the first place, we use $$2913 +/- 2.05(ste)$$, given either of the CI values, we can calculate the ste. For example, using the upper bound, we gather that $$3019 = 2913 + 2.05(ste)$$, resulting in $$ste =  51.7$$. In order to ensure a range of max 100, the $$ste \times 2.05$$ should not be higher than 50, which gives us a maximum $$ste = 24.39$$. 
 
-The ste is given by $$ste = \frac{s}{\sqrt(n)}$$, this way we can calculate *s* with the data already found, $$51.7 = \frac{s}{\sqrt(188)}$$, which gives us $$s=708.87$$. In order to mazimixe ste at 24.39, we can plug this into the ste formula to find the new *n*, such that, $$24.39 = \frac{708.87}{\sqrt(n)}$$, giving us $$n=844.71$$. Therefore, a sample size of approximately 845 babies would be needed in order to have a 96% CI with a range of 100.
+The ste is given by $$ste = \frac{s}{\sqrt(n)}$$, this way we can calculate *s* with the data already found, $$51.7 = \frac{s}{\sqrt(188)}$$, which gives us $$s=708.87$$. In order to mazimixe ste at 24.39, we can plug this into the ste formula to find the new *n*, such that, $$24.39 = \frac{708.87}{\sqrt(n)}$$, giving us $$n=844.71$$. 
+
+Therefore, a sample size of approximately 845 babies would be needed in order to have a 96% CI with a range of 100.
 
 ```{r}
 B <- 1000
@@ -60,54 +62,54 @@ T_star_q98 <- quantile(T_star, 1 - alpha/2)
 
 c(2*birthweight_mean - T_star_q98, 2*birthweight_mean - T_star_q2)
 ```
+The CI in this case is very similar to the previous one, only changing the lower bound by 1.
 ```{r}
-sum(T_star<T_star_q2)
+#sum(T_star<T_star_q2)
 ```
 
-<!-- #TODO: FIGURE OUT SAMPLE SIZE FOR HAVING CI INTERVAL LENGTH + 100 -->
-<!-- 828 babies to get the CI -->
 
-**b)**  An expert claims that the mean birthweight is bigger than 2800 gram. Verify this claim by using a relevant t-test, explain the meaning of the CI in the R-output for this test. Also propose and perform a suitable sign tests for this problem.
+**b)**
+
+$$H_0$$ = $$\mu =< 2800$$
+$$H_1$$ = $$\mu > 2800$$
 
 ```{r}
 t.test(birthweight, alternative = "greater", mu=2800)
 ```
-We reject H0(p=0.01337), so H1 is true and mean of the sample is bigger than 2800. 
-CI is infinite on right side, since the test is one-sided.
+As *p* is smaller than 0.05, we reject the null hypothesis, supporting the claim made by the expert. 
+The CI is infinite on the right side, since the test is one-sided.
 
-
-Binom test
-
-H0: mean <= 2800,
-H1: mean > 2800.
+For a sign test, we can use:
 
 ```{r}
 greater_weight <- as.integer(birthweight > 2800)
 binom.test(sum(greater_weight), length(greater_weight), p=0.5, alt="g")
 ```
-We reject H0(p=0.03868), so H1 is true and mean of the sample is bigger than 2800. 
+We again reject $$H_0$$, accepting $$H_1$$, that mean of the sample is bigger than 2800. 
 
-Both test confirmed the hypothesis that mean of the sample is bigger than 2800.
+Both test confirmed the hypothesis that the mean of the sample is bigger than 2800.
 
-**c)** Propose a way to compute the powers of the t-test and sing test from b) at some $\mu$ > 2800, comment.
+**c)** 
 ```{r}
-
+library(pwr)
+#pwr.t.test(n=188,d=NULL,sig.level=0.05,type="one.sample",alternative="greater")
 
 ```
 
-**d)**  Let $p$ be the probability that birthweight of a newborn baby is less than 2600 gram. Using asymptotic normality, the expert computed the left end $\hat{p}=0.25$ of the confidence interval $[\hat{p_l}, \hat{p_r}]$ for $p$. Recover the whole confidence interval and its confidence level.
+**d)**  
 ```{r}
 
 ```
 
-**e)** The expert also reports that there were 34 male and 28 female babies among 62 who weighted less than 2600 gram, and 61 male and 65 female babies among the remaining 126 babies. The expert claims that the mean weight is different for male and female babies. Verify this claim by an appropriate test.
+**e)** 
 
 
-success: w > 2600
+$$H_0$$ = $$P_(male) - P_(female) = 0$$
+$$H_1$$ = $$P_(male) - P_(female) \neq 0$$
 ```{r}
 prop.test(c(61, 65), c(95, 93))
 ```
-We accept H0: p1-p2=0, where p1, p2 - proportions of the success in population.
+As the p-value is bigger than 0.05, we fail to reject the null-hypothesis, meaning that there is no true difference between the mean weight of males and females. 
 
 ## Exercise 2
 A study tested whether cholesterol was reduced after using a certain brand of margarine as part of a low fat low cholesterol diet. The data set cholesterol.txt contains information on 18 people using margarine to reduce cholesterol: columns Before and After8weeks contain the cholesterol level (mmol/L) respectively before the diet and after 8 weeks on the diet.
