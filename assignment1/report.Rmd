@@ -41,9 +41,7 @@ To calculate the CI-96% in R:
 ```{r}
 t.test(birthweight, conf.level = 0.96)
 ```
-With a 96% CI, we get [2808-3019]. In order to decrease this range to 100, we can reverse the calculations in order to check the required sample size. In order to get CI in the first place, we use $$2913 +/- 2.05(ste)$$, given either of the CI values, we can calculate the ste. For example, using the upper bound, we gather that $$3019 = 2913 + 2.05(ste)$$, resulting in $$ste =  51.7$$. In order to ensure a range of max 100, the $$ste \times 2.05$$ should not be higher than 50, which gives us a maximum $$ste = 24.39$$. 
-
-The ste is given by $$ste = \frac{s}{\sqrt(n)}$$, this way we can calculate *s* with the data already found, $$51.7 = \frac{s}{\sqrt(188)}$$, which gives us $$s=708.87$$. In order to mazimixe ste at 24.39, we can plug this into the ste formula to find the new *n*, such that, $$24.39 = \frac{708.87}{\sqrt(n)}$$, giving us $$n=844.71$$. 
+With a 96% CI, we get [2808-3019]. In order to decrease this range to 100, we can reverse the calculations in order to check the required sample size. CI is given by $\left[\bar{X}-t_{\alpha / 2} \frac{s}{\sqrt{n}}, \bar{X}+t_{\alpha / 2} \frac{s}{\sqrt{n}}\right]$. Thus we can conclude that $t_{\alpha / 2} \frac{s}{\sqrt{n}} < 50$. From the data we can determine that $s=708.87$ and $t_{0.04 / 2} = 2.05$ (for 96% CI), and we can use this solve for $n = 844.71$.
 
 Therefore, a sample size of approximately 845 babies would be needed in order to have a 96% CI with a range of 100.
 
