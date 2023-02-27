@@ -204,7 +204,7 @@ print(paste("P-value =", p))
 We rejecting the null hypothesis that there is no difference between two samples.
 
 **c)**
-We have sample $x_i \in R[3, \theta]$, $i=\overline{1, 18}$, $\theta>3$. Analytical mean for this distribution will be $\mu = \frac{3 + \theta}{2}$.
+We have sample $x_i \in R[3, \theta]$, $i=\overline{1, 18}$, $\theta>3$. Analytic mean for this distribution will be $\mu = \frac{3 + \theta}{2}$.
 
 We can estimate the mean and the standard distribution using our sample.
 ```{r, echo=FALSE}
@@ -213,35 +213,31 @@ s <- sd(df[, 2])
 print(paste("mu =", mu, "s =", s))
 ```
 
-From this value we can obtain the estimation for the parameter $\theta$. Knowing $\hat{\mu}$,  $\hat{\theta} = 2*\hat{\mu} - 3}$.
+From this value we can obtain the estimation for the parameter $\theta$. Knowing $\hat{\mu}$   $\hat{\theta} = 2*\hat{\mu} - 3$.
 ```{r, echo=FALSE}
 theta_hat <- 2*mu - 3
 print(paste("theta_hat =", theta_hat))
 ```
 
-Then, using Central Limit Theorem, we can obtain confidence interval for parameter $\theta$.
+Then, using Central Limit Theorem, we can obtain confidence interval for parameter $\theta$:
+$$[t_{-\frac{\alpha}{2}}\frac{s}{\sqrt{n}} + \frac{\theta + 3}{2}, t_{\frac{\alpha}{2}}\frac{s}{\sqrt{n}} + \frac{\theta + 3}{2}]$$
 
 ```{r}
 alpha <- 0.05
 
 n <- length(df[, 2])
 t_alpha <- qt(1 - alpha/2, df=n)
-t_alpha
-
 theta_l <- theta_hat - t_alpha*s/sqrt(n)
 theta_r <- theta_hat + t_alpha*s/sqrt(n)
-c("[", theta_l,",", theta_r, "]")
+
+print(paste0("95% confidence interval: [", theta_l,", ", theta_r, "]"))
 ```
-We can improve the CI by having more individuals in the samples. We can improve since we know the distribution and we know the estimation for theta.
+We can improve the CI by having more individuals in the samples, as increasing in parameter *n* causes decreasing in standard deviation for sample of means. We can improve since we know the distribution and we know the estimation for theta.
 
 **d)** 
 
 ```{r}
-t <- max(df[, 2])
-t
-
-n <- length(df[, 2])
-n
+t <- max(df[, 2]); n <- length(df[, 2])
 
 for (theta in 3:12) {
   B <- 1000
@@ -256,20 +252,32 @@ for (theta in 3:12) {
   pr <- sum(t_star > t)/B
   
   p <- 2* min(pl, pr)
-  print(paste("Theta =", theta, ", ", p))
+  print(paste("Theta =", theta, ", ", p, "KS = "))
 }
 ```
+Using bootstrap we have values of $\theta = 8$ and $\theta = 9$ for which our null hypothesis is not rejected (p-value > 0.05).
+We can apply Kolmogorov-Smirnov test to examine the sample since it examine if two samples were drawn from the one distribution. We can generate sample from uniform distribution and apply test on them.
+
+```{r}
+ks.test(df[, 2], runif(100000, min = 3, max = 8))
+```
+P-value = 0.04, so we accept null hypothesis and can confirm that the sample was drown from  $U(3, \theta)$.
 
 **e)**
-Medium and proportion tests
+We are using sign test to test if the median of the cholesterol level is $\l 6$.
 ```{r}
 less_chol <- as.integer(df[, 2] < 6)
 binom.test(sum(less_chol), length(less_chol), p=0.5, alt="g")
 ```
+
+
+
+proportion tests
 ```{r}
 less_chol <- as.integer(df[, 2] < 4.5)
 binom.test(sum(less_chol),length(less_chol),p=0.25, alt="l")
 ```
+
 ## Exercise 3
 
 ```{r}
