@@ -1,0 +1,138 @@
+---
+title: "Assignment 2"
+author: "Alexia Salomons, Nathan Maxwell Jones, Yauheniya Makarevich, group 71"
+date: "15 March 2023"
+output: pdf_document
+fontsize: 11pt
+highlight: tango
+---
+
+```{r setup, include = FALSE}
+# set up global R options
+options(digits = 3)
+
+# set up knitr global chunk options
+knitr::opts_chunk$set(fig.height = 3)
+```
+
+
+## Exercise 1
+
+```{r, include=FALSE}
+# Read data
+```
+
+**a)** 
+
+```{r}
+
+```
+
+**b)** 
+
+```{r}
+
+```
+
+**c)** 
+
+```{r}
+
+```
+
+**d)** 
+
+```{r}
+
+```
+
+## Exercise 2
+
+```{r, include=FALSE}
+# Read data
+```
+
+**a)** 
+
+```{r}
+
+```
+
+**b)** 
+
+```{r}
+
+```
+
+**c)** 
+
+```{r}
+
+```
+
+**d)** 
+
+```{r}
+
+```
+
+## Exercise 3
+
+```{r, include=FALSE}
+# Read data
+```
+
+**a)** 
+
+```{r}
+
+```
+
+**b)** 
+
+```{r}
+
+```
+
+**c)** 
+
+```{r}
+
+```
+
+**d)** 
+
+```{r}
+
+```
+
+**e)** 
+
+```{r}
+
+```
+
+## Exercise 4
+
+```{r, include=FALSE}
+# Read data
+```
+
+**a)** 
+
+```{r}
+
+```
+
+**b)** 
+
+```{r}
+
+```
+
+**c)** 
+
+```{r}
+
+```
+
