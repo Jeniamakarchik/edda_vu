@@ -18,8 +18,9 @@ knitr::opts_chunk$set(fig.height = 3)
 
 ## Exercise 1
 
-```{r, include=FALSE}
-# Read data
+```{r}
+tree_df <- as.data.frame(read.table("data/treeVolume.txt", header=TRUE))
+head(tree_df)
 ```
 
 **a)** 
