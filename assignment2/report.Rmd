@@ -24,21 +24,44 @@ head(tree_df)
 ```
 
 **a)** 
-
+1-way ANOVA
 ```{r}
-
+tree_df$type <- as.factor(tree_df$type)
+tree_type_lm <- lm(volume~type, data=tree_df)
+anova(tree_type_lm)
 ```
+```{r}
+summary(tree_type_lm)
+```
+
+Therefore tree type does not influence volume significantly. Because the factor has two levels, we can apply a t-test.
+```{r}
+mask <- tree_df$type == "beech"
+t.test(tree_df$volume[mask], tree_df$volume[!mask])
+```
+This supports the result from the ANOVA test. The estimated volume for Beech trees is 30.2 and 35.2 for Oak trees.
+
 
 **b)** 
 
 ```{r}
-
+tree_type_d_lm <- lm(volume~type*diameter, data=tree_df)
+anova(tree_type_d_lm)
 ```
+The influence of diameter on volume is similar for both tree types since the interaction between type and diameter is not significant.
+
+
+```{r}
+tree_type_h_lm <- lm(volume~type*height, data=tree_df)
+anova(tree_type_h_lm)
+```
+The influence of height on volume is different for both tree types since the interaction between type and diameter is significant. We can see that type alone does not have a signficant effect, but it does interact significantly with height.
 
 **c)** 
 
 ```{r}
-
+tree_type_all_lm <- lm(volume~type*diameter+height, data=tree_df)
+anova(tree_type_all_lm)
 ```
 
 **d)** 
