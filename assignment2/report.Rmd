@@ -45,30 +45,79 @@ This supports the result from the ANOVA test. The estimated volume for Beech tre
 **b)** 
 
 ```{r}
-tree_type_d_lm <- lm(volume~type*diameter, data=tree_df)
+tree_type_d_lm <- lm(volume~height+type*diameter, data=tree_df)
 anova(tree_type_d_lm)
 ```
-The influence of diameter on volume is similar for both tree types since the interaction between type and diameter is not significant.
+
+```{r}
+summary(tree_type_d_lm)
+```
 
 
 ```{r}
-tree_type_h_lm <- lm(volume~type*height, data=tree_df)
+tree_type_h_lm <- lm(volume~diameter+type*height, data=tree_df)
 anova(tree_type_h_lm)
 ```
-The influence of height on volume is different for both tree types since the interaction between type and diameter is significant. We can see that type alone does not have a signficant effect, but it does interact significantly with height.
+
+```{r}
+summary(tree_type_h_lm)
+```
+
+As we can see, both pair-wise interactions are not significant. Therefore, we can consider that both height and diameter have the same influence regardless of tree type. 
 
 **c)** 
 
+We saw that the interactions of height and diameter with type were not significant, and so we will investigate a purely additive model.
+
 ```{r}
-tree_type_all_lm <- lm(volume~type*diameter+height, data=tree_df)
+tree_type_all_lm <- lm(volume~diameter+height+type, data=tree_df)
 anova(tree_type_all_lm)
 ```
+```{r}
+summary(tree_type_all_lm)
+```
+
+Type is insidnificant in additive model, so we are going to check the model without type variable.
+
+```{r}
+tree_all_lm <- lm(volume~diameter+height, data=tree_df)
+anova(tree_all_lm)
+```
+```{r}
+summary(tree_all_lm)
+```
+We get almost the same R-squared value using this simpler model, and so this is our model of choice. Therefore, we conclude that type does not affect volume significantly. Looking at the coefficients, we see that increasing both height and diameter result in an increase in volume, with diameter having a bigger impact. This makes sense... we gonna sus this out a lil further in the next question ma dude.
+
+$$volume = -64.37 + 4.63 * diameter + 0.43 * height$$
+```{r}
+mean_d <- mean(tree_df$diameter)
+mean_h <- mean(tree_df$height)
+
+means <-  data.frame(diameter=c(mean_d), height=c(mean_h))
+means
+predict(tree_all_lm, means, se.fit = TRUE)
+```
+We expect average volume to be 32.6.
 
 **d)** 
 
 ```{r}
-
+tree_df$math_volume <- tree_df$height*tree_df$diameter^2
+updated_lm <- lm(volume~math_volume, data=tree_df)
+anova(updated_lm)
 ```
+
+```{r}
+summary(updated_lm)
+```
+```{r, echo=FALSE}
+par(mfrow=c(1,2))
+
+qqnorm(residuals(updated_lm))
+plot(fitted(updated_lm), residuals(updated_lm))
+```
+
+Looks okay.
 
 ## Exercise 2
 
