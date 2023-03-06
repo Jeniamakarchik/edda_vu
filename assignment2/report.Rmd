@@ -144,24 +144,182 @@ columns <- c("bad", "crime", "lawyers", "employ", "pop")
 
 **a)** 
 
+Let's find outliers and influence points and then check for collinearity.
+
+```{r}
+model <- lm(expend~bad+crime+lawyers+employ+pop, data=crime_df)
+cooks.distance(model)[cooks.distance(model) > 1]
+```
+```{r, echo=FALSE}
+plot(cooks.distance(model), type='b')
+```
+
 ```{r}
 round(cor(crime_df[, c(columns, target)]))
-
 ```
+
 ```{r}
 pairs(cor(crime_df[, c(columns, target)]))
+```
+```{r}
+outliers <- crime_df[c(5,8,35,44),]
+outliers
+```
+
+```{r}
+# removing outliers from the dataframe
+crime_df_upd <- crime_df[c(-5,-8,-35,-44),]
+crime_df_upd
+```
+```{r}
+model <- lm(expend~bad+crime+lawyers+employ+pop, data=crime_df_upd)
+cooks.distance(model)[cooks.distance(model) > 1]
+```
+```{r}
+plot(cooks.distance(model), type='b')
+```
+
+```{r}
+pairs(cor(crime_df_upd[, c(columns, target)]))
+```
+
+```{r, include=FALSE}
+library(car)
+```
+
+```{r}
+vif(model)
+```
+
+```{r}
+model <- lm(expend~bad+crime+lawyers+pop, data=crime_df_upd)
+vif(model)
+```
+```{r}
+model <- lm(expend~bad+crime+lawyers, data=crime_df_upd)
+vif(model)
+```
+
+```{r}
+pairs(cor(crime_df_upd[, c("bad", "crime", "lawyers", target)]))
 ```
 
 **b)** 
 
 ```{r}
+# 1. empty model
+summary(lm(expend~1, data=crime_df_upd))
+```
 
+```{r}
+# 1. empty model
+summary(lm(expend~1, data=crime_df_upd))
+```
+
+```{r}
+columns
+```
+
+
+```{r}
+# 2. empty model
+summary(lm(expend~bad, data=crime_df_upd))
+```
+
+```{r}
+# 2. empty model
+summary(lm(expend~crime, data=crime_df_upd))
+```
+
+```{r}
+# 2. empty model
+summary(lm(expend~lawyers, data=crime_df_upd))
+```
+
+```{r}
+# 2. empty model
+summary(lm(expend~employ, data=crime_df_upd))
+```
+
+```{r}
+# 2. empty model
+summary(lm(expend~pop, data=crime_df_upd))
+```
+```{r}
+# 3.two var model
+summary(lm(expend~employ+bad, data=crime_df_upd))
+```
+
+```{r}
+# 3.two var model
+summary(lm(expend~employ+crime, data=crime_df_upd))
+```
+
+```{r}
+# 3.two var model
+summary(lm(expend~employ+lawyers, data=crime_df_upd))
+```
+
+```{r}
+# 3.two var model
+summary(lm(expend~employ+pop, data=crime_df_upd))
+```
+
+```{r}
+# 4. three var model
+summary(lm(expend~employ+crime+bad, data=crime_df_upd))
+```
+
+```{r}
+# 4. three var model
+summary(lm(expend~employ+crime+lawyers, data=crime_df_upd))
+```
+
+```{r}
+# 4. three var model
+summary(lm(expend~employ+crime+pop, data=crime_df_upd))
+```
+
+```{r}
+# 5. four var model
+summary(lm(expend~employ+crime+pop+bad, data=crime_df_upd))
+```
+
+```{r}
+# 5. four var model
+summary(lm(expend~employ+crime+pop+lawyers, data=crime_df_upd))
+```
+
+Final model: expend = -247 + 0.0209\*employ + 0.0543\*crime + 0.0714\*pop $\pm$ error, with $R^2 = 0.974$.
+Step - up naturally removes collinearity and can be compared with VIF results.
+
+```{r}
+model <- lm(expend~employ+crime+pop, data=crime_df_upd)
+summary(model)
+```
+
+
+```{r, echo=FALSE}
+par(mfrow=c(1,2))
+
+qqnorm(residuals(model))
+plot(fitted(model), residuals(model))
 ```
 
 **c)** 
+```{r}
+mean(crime_df_upd$expend)
+```
 
 ```{r}
+new_data <- data.frame(bad=50, crime=5000, lawyers=5000, employ=5000, pop=5000)
+predict(model, new_data, interval="prediction", level=0.95)
+```
 
+If we thinl that improvement means making interval smaller, we can go for confidence interval.
+
+```{r}
+predict(model, new_data, interval="confidence", level=0.95)
 ```
 
 **d)** 
@@ -174,12 +332,25 @@ pairs(cor(crime_df[, c(columns, target)]))
 
 ```{r, include=FALSE}
 # Read data
+titanic_df <- as.data.frame(read.table("data/titanic.txt", header=TRUE))
 ```
+
+```{r}
+head(titanic_df)
+```
+
+```{r}
+plot(titanic_df)
+```
+
 
 **a)** 
 
 ```{r}
-
+titanic_df_upd <- na.omit(titanic_df)
+titanic_df_upd$PClass <- as.factor(titanic_df_upd$PClass)
+titanic_df_upd$Sex <- as.factor(titanic_df_upd$Sex)
+head(titanic_df_upd)
 ```
 
 **b)** 
