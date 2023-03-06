@@ -69,7 +69,7 @@ In (b), we saw that the interactions of *height* and *diameter* with *type* were
 
 ```{r}
 tree_add_all_lm <- lm(volume~diameter+height+type, data=tree_df)
-anova(tree_type_all_lm)
+anova(tree_add_all_lm)
 ```
 ```{r}
 summary(tree_add_all_lm)
@@ -79,7 +79,7 @@ We see that the effect of *type* is not significant in the additive model. There
 
 ```{r}
 tree_add_dh_lm <- lm(volume~diameter+height, data=tree_df)
-anova(tree_all_lm)
+anova(tree_add_dh_lm)
 ```
 ```{r}
 summary(tree_add_dh_lm)
@@ -111,24 +111,25 @@ predict(tree_add_dh_lm, means, se.fit = TRUE)
 Therefore we expect the volume for such a tree to be 32.6.
 
 **d)** 
-
+Assuming that a tree is roughly cylindrical, we expect that *volume* would be proportional to the *height*, multiplied by the square of *diameter*. We perform this transformation and add it as a new column in the data frame. We could apply the true transformation, $V = h \times \pi (d/2)^2$, but this would just add unnecessary constants which would already be captured in the regression coefficients.
 ```{r}
-tree_df$math_volume <- tree_df$height*tree_df$diameter^2
-updated_lm <- lm(volume~math_volume, data=tree_df)
-anova(updated_lm)
+tree_df$math_volume <- tree_df$height * tree_df$diameter^2
+math_volume_lm <- lm(volume~math_volume, data=tree_df)
+anova(math_volume_lm)
 ```
 
 ```{r}
-summary(updated_lm)
+summary(math_volume_lm)
 ```
+We see that this transformation does indeed produce an explanatory value with significant effect. We also see that the R-squared value of 0.975 is higher than that of the previous models, indicating that it better explains the data. Finally, we check the assumptions of this model.
 ```{r, echo=FALSE}
 par(mfrow=c(1,2))
 
-qqnorm(residuals(updated_lm))
-plot(fitted(updated_lm), residuals(updated_lm))
+qqnorm(residuals(math_volume_lm))
+plot(fitted(math_volume_lm), residuals(math_volume_lm))
 ```
 
-Looks okay.
+These plots are acceptable, meaning we can accept the model assumptions.
 
 ## Exercise 2
 
