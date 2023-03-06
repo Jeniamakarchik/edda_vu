@@ -117,18 +117,27 @@ qqnorm(residuals(updated_lm))
 plot(fitted(updated_lm), residuals(updated_lm))
 ```
 
-Looks okay.
+The data appears to be approximately normal. Both plots look ok. 
 
 ## Exercise 2
 
 ```{r, include=FALSE}
 # Read data
+crime_df <- as.data.frame(read.table("data/expensescrime.txt", header=TRUE))
+head(crime_df)
+
+target <- "expend"
+columns <- c("bad", "crime", "lawyers", "employ", "pop")
 ```
 
 **a)** 
 
 ```{r}
+round(cor(crime_df[, c(columns, target)]))
 
+```
+```{r}
+pairs(cor(crime_df[, c(columns, target)]))
 ```
 
 **b)** 
