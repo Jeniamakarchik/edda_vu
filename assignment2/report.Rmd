@@ -18,13 +18,13 @@ knitr::opts_chunk$set(fig.height = 3)
 
 ## Exercise 1
 
-```{r}
+```{r, include=FALSE}
 tree_df <- as.data.frame(read.table("data/treeVolume.txt", header=TRUE))
 head(tree_df)
 ```
 
 **a)** 
-1-way ANOVA
+To investigate whether tree type influences total wood volume, we can perform a one-way ANOVA.
 ```{r}
 tree_df$type <- as.factor(tree_df$type)
 tree_type_lm <- lm(volume~type, data=tree_df)
@@ -33,17 +33,15 @@ anova(tree_type_lm)
 ```{r}
 summary(tree_type_lm)
 ```
-
-Therefore tree type does not influence volume significantly. Because the factor has two levels, we can apply a t-test.
+With $p > 0.05$, we can conclude that *type* does not have a significant effect on *volume*. Because the factor *type* has two levels, we can apply a two sample t-test.
 ```{r}
 mask <- tree_df$type == "beech"
 t.test(tree_df$volume[mask], tree_df$volume[!mask])
 ```
-This supports the result from the ANOVA test. The estimated volume for Beech trees is 30.2 and 35.2 for Oak trees.
-
+This supports the result from the ANOVA test. The estimated volume is 30.2 for Beech trees and 35.2 for Oak trees.
 
 **b)** 
-
+To investigate this claim, we create two models, each including all three explanatory variables (*type*, *diameter* and *height*). In the first model, we also include the pairwise interaction between *type* and *diameter*.
 ```{r}
 tree_type_d_lm <- lm(volume~height+type*diameter, data=tree_df)
 anova(tree_type_d_lm)
@@ -63,61 +61,75 @@ anova(tree_type_h_lm)
 summary(tree_type_h_lm)
 ```
 
-As we can see, both pair-wise interactions are not significant. Therefore, we can consider that both height and diameter have the same influence regardless of tree type. 
+We see that both pairwise interactions are not significant. Therefore, we can conclude that both *height* and *diameter* have the same influence regardless of *type*. Both models suggest that all three explanatory variables have a significant effect individually.
 
 **c)** 
 
-We saw that the interactions of height and diameter with type were not significant, and so we will investigate a purely additive model.
+In (b), we saw that the interactions of *height* and *diameter* with *type* were not significant, and so we will investigate a purely additive model (assuming no interactions).
 
 ```{r}
-tree_type_all_lm <- lm(volume~diameter+height+type, data=tree_df)
-anova(tree_type_all_lm)
+tree_add_all_lm <- lm(volume~diameter+height+type, data=tree_df)
+anova(tree_add_all_lm)
 ```
 ```{r}
-summary(tree_type_all_lm)
+summary(tree_add_all_lm)
 ```
 
-Type is insidnificant in additive model, so we are going to check the model without type variable.
+We see that the effect of *type* is not significant in the additive model. Therefore we will investigate an additive model that excludes *type*.
 
 ```{r}
-tree_all_lm <- lm(volume~diameter+height, data=tree_df)
-anova(tree_all_lm)
+tree_add_dh_lm <- lm(volume~diameter+height, data=tree_df)
+anova(tree_add_dh_lm)
 ```
 ```{r}
-summary(tree_all_lm)
+summary(tree_add_dh_lm)
 ```
-We get almost the same R-squared value using this simpler model, and so this is our model of choice. Therefore, we conclude that type does not affect volume significantly. Looking at the coefficients, we see that increasing both height and diameter result in an increase in volume, with diameter having a bigger impact. This makes sense... we gonna sus this out a lil further in the next question ma dude.
+This model has almost the same R-squared value as before, while using fewer variables. Since simpler models are generally preferred, this is our model of choice to make predictions. As a final test, we need to check this model's assumptions to ensure that the conclusions we draw from it are valid:
+
+```{r, echo=FALSE}
+par(mfrow=c(1, 2))
+qqnorm(residuals(tree_add_dh_lm))
+plot(fitted(tree_add_dh_lm), residuals(tree_add_dh_lm))
+```
+While these plots are not perfect, we believe the model assumptions to be valid. 
+
+Therefore, the effects of *type*, *diameter* and *height* can be summarized as follows:
+
+* The tree *type* does not affect volume significantly.
+* Looking at the coefficients, we see that increasing both height and diameter result in an increase in volume, with diameter having a bigger impact (with a gradient of 4.63 compared to *height's* 0.43). This makes sense given that we know volume is proportional to the the square of the diameter.
+
+To predict the volume for a tree with the overall average diameter and height, we can use the following linear regression model:
 
 $$volume = -64.37 + 4.63 * diameter + 0.43 * height$$
 ```{r}
 mean_d <- mean(tree_df$diameter)
 mean_h <- mean(tree_df$height)
-
 means <-  data.frame(diameter=c(mean_d), height=c(mean_h))
-means
-predict(tree_all_lm, means, se.fit = TRUE)
+
+predict(tree_add_dh_lm, means, se.fit = TRUE)
 ```
-We expect average volume to be 32.6.
+Therefore we expect the volume for such a tree to be 32.6.
 
 **d)** 
-
+Assuming that a tree is roughly cylindrical, we expect that *volume* would be proportional to the *height*, multiplied by the square of *diameter*. We perform this transformation and add it as a new column in the data frame. We could apply the true transformation, $V = h \times \pi (d/2)^2$, but this would just add unnecessary constants which would already be captured in the regression coefficients.
 ```{r}
-tree_df$math_volume <- tree_df$height*tree_df$diameter^2
-updated_lm <- lm(volume~math_volume, data=tree_df)
-anova(updated_lm)
+tree_df$math_volume <- tree_df$height * tree_df$diameter^2
+math_volume_lm <- lm(volume~math_volume, data=tree_df)
+anova(math_volume_lm)
 ```
 
 ```{r}
-summary(updated_lm)
+summary(math_volume_lm)
 ```
+We see that this transformation does indeed produce an explanatory value with significant effect. We also see that the R-squared value of 0.975 is higher than that of the previous models, indicating that it better explains the data. Finally, we check the assumptions of this model.
 ```{r, echo=FALSE}
 par(mfrow=c(1,2))
 
-qqnorm(residuals(updated_lm))
-plot(fitted(updated_lm), residuals(updated_lm))
+qqnorm(residuals(math_volume_lm))
+plot(fitted(math_volume_lm), residuals(math_volume_lm))
 ```
 
-The data appears to be approximately normal. Both plots look ok. 
+These plots are acceptable, meaning we can accept the model assumptions.
 
 ## Exercise 2
 
