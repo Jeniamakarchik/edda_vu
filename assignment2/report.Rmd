@@ -111,7 +111,7 @@ predict(tree_add_dh_lm, means, se.fit = TRUE)
 Therefore we expect the volume for such a tree to be 32.6.
 
 **d)** 
-Assuming that a tree is roughly cylindrical, we expect that *volume* would be proportional to the *height*, multiplied by the square of *diameter*. We perform this transformation and add it as a new column in the data frame. We could apply the true transformation, $V = h \times \pi (d/2)^2$, but this would just add unnecessary constants which would already be captured in the regression coefficients.
+Assuming that a tree is roughly cylindrical, we expect that *volume* would be proportional to the *height* multiplied by the square of *diameter*. We perform this transformation and add it as a new column in the data frame. We could apply the true transformation, $V = h \times \pi (d/2)^2$, but this would just add unnecessary constants which would already be captured in the regression coefficients.
 ```{r}
 tree_df$math_volume <- tree_df$height * tree_df$diameter^2
 math_volume_lm <- lm(volume~math_volume, data=tree_df)
@@ -121,7 +121,7 @@ anova(math_volume_lm)
 ```{r}
 summary(math_volume_lm)
 ```
-We see that this transformation does indeed produce an explanatory value with significant effect. We also see that the R-squared value of 0.975 is higher than that of the previous models, indicating that it better explains the data. Finally, we check the assumptions of this model.
+We see that this transformation does indeed produce an explanatory value with a significant effect. We also see that the R-squared value of 0.975 is higher than that of the previous models, indicating that it better explains the data. Finally, we check the assumptions of this model.
 ```{r, echo=FALSE}
 par(mfrow=c(1,2))
 
@@ -143,183 +143,174 @@ columns <- c("bad", "crime", "lawyers", "employ", "pop")
 ```
 
 **a)** 
+<<<<<<<< INCLUDE OTHER GRAPHICAL SUMMARIES??? >>>>>>>>
 
-Let's find outliers and influence points and then check for collinearity.
+To investigate the interactions between all the variables of interest, we can plot the pairwise scatter plots for all their combinations:
+
+```{r, echo=FALSE}
+pairs(crime_df[, c(target, columns)])
+```
+
+We see that *expend*, our response variable, appears to have a positive correlation with all the explanatory variables except for *crime*. There appear to be several outliers at the high end of the data which could skew the model. We can also see that collinearity exists between the explanatory variables *bad*, *lawyers*, *employ* and *pop*. This is a problem since the redundant information will make the regression coefficients difficult to estimate. 
+
+We can use Cook's distance to find the influence points (a distance greater than 1 indicates an outlier)
 
 ```{r}
-model <- lm(expend~bad+crime+lawyers+employ+pop, data=crime_df)
-cooks.distance(model)[cooks.distance(model) > 1]
+crime_lm <- lm(expend~bad+crime+lawyers+employ+pop, data=crime_df)
+cooks.distance(crime_lm)[cooks.distance(crime_lm) > 1]
 ```
 ```{r, echo=FALSE}
-plot(cooks.distance(model), type='b')
+plot(cooks.distance(crime_lm), type='b', ylab="Cook's distance", main = "Cook's distance for expensecrime.txt")
 ```
 
-```{r}
-round(cor(crime_df[, c(columns, target)]))
-```
+We can see that indices of 5, 8, 35 and 44 are outliers, which we can remove:
 
 ```{r}
-pairs(cor(crime_df[, c(columns, target)]))
-```
-```{r}
-outliers <- crime_df[c(5,8,35,44),]
-outliers
+crime_df_upd <- crime_df[-c(5,8,35,44),]
 ```
 
-```{r}
-# removing outliers from the dataframe
-crime_df_upd <- crime_df[c(-5,-8,-35,-44),]
-crime_df_upd
-```
-```{r}
-model <- lm(expend~bad+crime+lawyers+employ+pop, data=crime_df_upd)
-cooks.distance(model)[cooks.distance(model) > 1]
-```
-```{r}
-plot(cooks.distance(model), type='b')
-```
+To further investigate collinearity, we can examine the correlations between all the explanatory variables, which confirms strong correlations between *bad*, *lawyers*, *employ* and *pop*.
 
 ```{r}
-pairs(cor(crime_df_upd[, c(columns, target)]))
+round(cor(crime_df[, c(columns)]), 2)
 ```
+<<<<<<<< IS VIF NECCESSARY?  >>>>>>>>
+
+To resolve the problem of collinearity, we can iteratively remove variables based on their VIF-values as follows:
 
 ```{r, include=FALSE}
 library(car)
 ```
 
-```{r}
-vif(model)
-```
+Full model
 
 ```{r}
-model <- lm(expend~bad+crime+lawyers+pop, data=crime_df_upd)
-vif(model)
-```
-```{r}
-model <- lm(expend~bad+crime+lawyers, data=crime_df_upd)
-vif(model)
+vif(lm(expend~bad+crime+lawyers+employ+pop, data=crime_df))
 ```
 
+Remove *employ*
+
 ```{r}
-pairs(cor(crime_df_upd[, c("bad", "crime", "lawyers", target)]))
+vif(lm(expend~bad+crime+lawyers+pop, data=crime_df_upd))
+```
+
+Remove *pop*
+
+```{r}
+vif(lm(expend~bad+crime+lawyers, data=crime_df_upd))
+```
+
+<<<<<<<< SHOULD WE SHOW PLOT AGAIN?? >>>>>>>>
+
+Therefore, after removing the influence points and collinear explanatory variables, the adjusted scatter plot appears as follows. We will work with this adjusted data for the remainder of this question.
+
+```{r}
+pairs(crime_df_upd[, c(target, "bad", "crime", "lawyers")])
 ```
 
 **b)** 
 
-```{r}
-# 1. empty model
-summary(lm(expend~1, data=crime_df_upd))
-```
+```{r, include=FALSE}
+print("Step 1")
 
-```{r}
-# 1. empty model
-summary(lm(expend~1, data=crime_df_upd))
-```
-
-```{r}
-columns
-```
-
-
-```{r}
-# 2. empty model
+print("bad")
 summary(lm(expend~bad, data=crime_df_upd))
-```
 
-```{r}
-# 2. empty model
+print("crime")
 summary(lm(expend~crime, data=crime_df_upd))
-```
 
-```{r}
-# 2. empty model
+print("lawyers")
 summary(lm(expend~lawyers, data=crime_df_upd))
+
+print("employ")
+summary(lm(expend~employ, data=crime_df_upd)) # YES
+
+print("pop")
+summary(lm(expend~pop, data=crime_df_upd)) 
 ```
 
-```{r}
-# 2. empty model
-summary(lm(expend~employ, data=crime_df_upd))
-```
+```{r, include=FALSE}
+print("Step 2")
 
-```{r}
-# 2. empty model
-summary(lm(expend~pop, data=crime_df_upd))
-```
-```{r}
-# 3.two var model
+print("bad")
 summary(lm(expend~employ+bad, data=crime_df_upd))
-```
 
-```{r}
-# 3.two var model
-summary(lm(expend~employ+crime, data=crime_df_upd))
-```
+print("crime")
+summary(lm(expend~employ+crime, data=crime_df_upd)) # YES
 
-```{r}
-# 3.two var model
+print("lawyers")
 summary(lm(expend~employ+lawyers, data=crime_df_upd))
-```
 
-```{r}
-# 3.two var model
+print("pop")
 summary(lm(expend~employ+pop, data=crime_df_upd))
 ```
 
-```{r}
-# 4. three var model
+```{r, include=FALSE}
+print("Step 3")
+
+print("bad")
 summary(lm(expend~employ+crime+bad, data=crime_df_upd))
-```
 
-```{r}
-# 4. three var model
+print("lawyers")
 summary(lm(expend~employ+crime+lawyers, data=crime_df_upd))
+
+print("pop")
+summary(lm(expend~employ+crime+pop, data=crime_df_upd)) # YES
 ```
 
-```{r}
-# 4. three var model
-summary(lm(expend~employ+crime+pop, data=crime_df_upd))
-```
+```{r, include=FALSE}
+print("Step 4")
 
-```{r}
-# 5. four var model
+print("bad")
 summary(lm(expend~employ+crime+pop+bad, data=crime_df_upd))
+
+print("lawyers")
+summary(lm(expend~employ+crime+pop+lawyers, data=crime_df_upd))
+
+# None significant!
 ```
 
+The step-up process was carried out. The variables added in order were *employ*, *crime* and *pop*, after which no further added variables had significant p-values. Hence the final model is as follows:
+
 ```{r}
-# 5. four var model
-summary(lm(expend~employ+crime+pop+lawyers, data=crime_df_upd))
+step_up_lm <- lm(expend~employ+crime+pop, data=crime_df_upd)
+summary(step_up_lm)
 ```
 
 Final model: expend = -247 + 0.0209\*employ + 0.0543\*crime + 0.0714\*pop $\pm$ error, with $R^2 = 0.974$.
 Step - up naturally removes collinearity and can be compared with VIF results.
 
-```{r}
-model <- lm(expend~employ+crime+pop, data=crime_df_upd)
-summary(model)
-```
-
+Finally, we check the model assumptions, which can be accepted based on the following plots:
 
 ```{r, echo=FALSE}
 par(mfrow=c(1,2))
 
-qqnorm(residuals(model))
-plot(fitted(model), residuals(model))
+qqnorm(residuals(step_up_lm))
+plot(fitted(step_up_lm), residuals(step_up_lm))
+```
+
+<<<<<< COMPARE TO MODEL FROM A??? >>>>>>>
+
+Worse R-squared! (0.957!)... expand... step up better way of avoiding non-linearity?
+```{r}
+summary(lm(expend~bad+crime+lawyers, data=crime_df_upd))
 ```
 
 **c)** 
+
 ```{r}
 mean(crime_df_upd$expend)
 ```
 
 ```{r}
 new_data <- data.frame(bad=50, crime=5000, lawyers=5000, employ=5000, pop=5000)
-predict(model, new_data, interval="prediction", level=0.95)
+predict(step_up_lm, new_data, interval="prediction", level=0.95)
 ```
 
-If we thinl that improvement means making interval smaller, we can go for confidence interval.
+If we think that improvement means making interval smaller, we can go for confidence interval.
 
 ```{r}
-predict(model, new_data, interval="confidence", level=0.95)
+predict(step_up_lm, new_data, interval="confidence", level=0.95)
 ```
 
 **d)** 
