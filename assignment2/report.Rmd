@@ -138,8 +138,8 @@ These plots are acceptable, meaning we can accept the model assumptions.
 crime_df <- as.data.frame(read.table("data/expensescrime.txt", header=TRUE))
 head(crime_df)
 
-target <- "expend"
-columns <- c("bad", "crime", "lawyers", "employ", "pop")
+response <- "expend"
+exp_vars <- c("bad", "crime", "lawyers", "employ", "pop")
 ```
 
 **a)** 
@@ -148,7 +148,7 @@ columns <- c("bad", "crime", "lawyers", "employ", "pop")
 To investigate the interactions between all the variables of interest, we can plot the pairwise scatter plots for all their combinations:
 
 ```{r, echo=FALSE}
-pairs(crime_df[, c(target, columns)])
+pairs(crime_df[, c(response, exp_vars)])
 ```
 
 We see that *expend*, our response variable, appears to have a positive correlation with all the explanatory variables except for *crime*. There appear to be several outliers at the high end of the data which could skew the model. We can also see that collinearity exists between the explanatory variables *bad*, *lawyers*, *employ* and *pop*. This is a problem since the redundant information will make the regression coefficients difficult to estimate. 
@@ -172,7 +172,7 @@ crime_df_upd <- crime_df[-c(5,8,35,44),]
 To further investigate collinearity, we can examine the correlations between all the explanatory variables, which confirms strong correlations between *bad*, *lawyers*, *employ* and *pop*.
 
 ```{r}
-round(cor(crime_df[, c(columns)]), 2)
+round(cor(crime_df[, c(exp_vars)]), 2)
 ```
 <<<<<<<< IS VIF NECCESSARY?  >>>>>>>>
 
@@ -182,30 +182,36 @@ To resolve the problem of collinearity, we can iteratively remove variables base
 library(car)
 ```
 
-Full model
+Full model:
 
 ```{r}
 vif(lm(expend~bad+crime+lawyers+employ+pop, data=crime_df))
 ```
 
-Remove *employ*
+Remove *employ*:
 
 ```{r}
 vif(lm(expend~bad+crime+lawyers+pop, data=crime_df_upd))
 ```
 
-Remove *pop*
+Remove *pop*:
 
 ```{r}
-vif(lm(expend~bad+crime+lawyers, data=crime_df_upd))
+vif_lm = lm(expend~bad+crime+lawyers, data=crime_df_upd)
+vif(vif_lm)
 ```
+
+```{r}
+summary(vif_lm)
+```
+In the resulting model, all the explanatory variables are significant.
 
 <<<<<<<< SHOULD WE SHOW PLOT AGAIN?? >>>>>>>>
 
 Therefore, after removing the influence points and collinear explanatory variables, the adjusted scatter plot appears as follows. We will work with this adjusted data for the remainder of this question.
 
 ```{r}
-pairs(crime_df_upd[, c(target, "bad", "crime", "lawyers")])
+pairs(crime_df_upd[, c(response, "bad", "crime", "lawyers")])
 ```
 
 **b)** 
@@ -278,7 +284,8 @@ summary(step_up_lm)
 ```
 
 Final model: expend = -247 + 0.0209\*employ + 0.0543\*crime + 0.0714\*pop $\pm$ error, with $R^2 = 0.974$.
-Step - up naturally removes collinearity and can be compared with VIF results.
+
+We see that the step-up method naturally removes collinearity and produced a better model than was arrived upon using VIF in (a), which had an R-squared value of 0.957.
 
 Finally, we check the model assumptions, which can be accepted based on the following plots:
 
@@ -289,25 +296,15 @@ qqnorm(residuals(step_up_lm))
 plot(fitted(step_up_lm), residuals(step_up_lm))
 ```
 
-<<<<<< COMPARE TO MODEL FROM A??? >>>>>>>
-
-Worse R-squared! (0.957!)... expand... step up better way of avoiding non-linearity?
-```{r}
-summary(lm(expend~bad+crime+lawyers, data=crime_df_upd))
-```
-
 **c)** 
 
-```{r}
-mean(crime_df_upd$expend)
-```
-
+Using the step-up model found in (b), the 95% prediction interval for *expend* is given by:
 ```{r}
 new_data <- data.frame(bad=50, crime=5000, lawyers=5000, employ=5000, pop=5000)
 predict(step_up_lm, new_data, interval="prediction", level=0.95)
 ```
 
-If we think that improvement means making interval smaller, we can go for confidence interval.
+We can improve this interval (make it more narrow) by considering the **confidence interval**, which does not take into account the error.
 
 ```{r}
 predict(step_up_lm, new_data, interval="confidence", level=0.95)
@@ -315,9 +312,55 @@ predict(step_up_lm, new_data, interval="confidence", level=0.95)
 
 **d)** 
 
-```{r}
-
+We can apply the lasso method as follows:
+```{r, include=FALSE}
+# install.packages("glmnet", repos = "https://cran.us.r-project.org")
+library(glmnet)
 ```
+
+```{r}
+x <- as.matrix(crime_df_upd[, c(exp_vars)])
+y <- as.matrix(crime_df_upd[, c(response)])
+
+train <- (sample(1:nrow(x), 0.67*nrow(x))) # train by using 2/3 of the data
+x.train <- x[train,]; y.train <- y[train]
+x.test <- x[-train,]; y.test <- y[-train]
+lasso.mod=glmnet(x.train, y.train, alpha=1)
+cv.lasso=cv.glmnet(x.train,y.train,alpha=1,type.measure='mse')
+```
+
+```{r}
+plot(lasso.mod, label=T, xvar="lambda")  # have a look at the lasso path
+```
+```{r}
+plot(cv.lasso) # the best lambda by cross-validation
+```
+```{r}
+(lambda.min=cv.lasso$lambda.min)
+(lambda.1se=cv.lasso$lambda.1se)
+```
+
+Looking at lambda min
+```{r}
+coef(lasso.mod, s=cv.lasso$lambda.min) # beta’s for the best lambda
+y.pred <- predict(lasso.mod, s=lambda.min, newx=x.test) # predict for test
+mse.lasso <- mean((y.test - y.pred)^2); mse.lasso # mse for the predicted test rows
+```
+Looking at lambda 1se (the one we should use I think?)
+```{r}
+coef(lasso.mod, s=cv.lasso$lambda.1se) # beta’s for lambda.1se
+y.pred <- predict(lasso.mod, s=lambda.1se, newx=x.test) # predict for test
+mse.lasso <- mean((y.test - y.pred)^2); mse.lasso # mse for the predicted test rows
+```
+Compare to step-up model in (b).
+```{r}
+new_data <- data.frame(x.test)
+y.pred <- predict(step_up_lm, new_data, interval="confidence", level=0.95)
+mse.step_up <- mean((y.test - y.pred)^2); mse.step_up # mse for the predicted test rows
+```
+
+Step-up model is better? Is this the right way to compare?
+
 
 ## Exercise 3
 
