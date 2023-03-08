@@ -319,25 +319,35 @@ library(glmnet)
 ```
 
 ```{r}
-x <- as.matrix(crime_df_upd[, c(exp_vars)])
+x <- as.matrix(crime_df_upd[, exp_vars])
 y <- as.matrix(crime_df_upd[, c(response)])
 
+# train-test splitting
 train <- (sample(1:nrow(x), 0.67*nrow(x))) # train by using 2/3 of the data
 x.train <- x[train,]; y.train <- y[train]
 x.test <- x[-train,]; y.test <- y[-train]
-lasso.mod=glmnet(x.train, y.train, alpha=1)
-cv.lasso=cv.glmnet(x.train,y.train,alpha=1,type.measure='mse')
+
+# fitting the model
+lasso.mod <- glmnet(x.train, y.train, alpha=1)
+cv.lasso <- cv.glmnet(x.train,y.train,alpha=1,type.measure='mse')
 ```
 
 ```{r}
 plot(lasso.mod, label=T, xvar="lambda")  # have a look at the lasso path
 ```
+
 ```{r}
 plot(cv.lasso) # the best lambda by cross-validation
 ```
+
 ```{r}
-(lambda.min=cv.lasso$lambda.min)
-(lambda.1se=cv.lasso$lambda.1se)
+(lambda.min <- cv.lasso$lambda.min)
+(lambda.1se <- cv.lasso$lambda.1se)
+```
+
+```{r}
+# https://glmnet.stanford.edu/articles/glmnet.html#assessing-models-on-test-data-1
+assess.glmnet(lasso.mod, newx = x.test, newy = y.test, s=cv.lasso$lambda.1se)
 ```
 
 Looking at lambda min
@@ -346,6 +356,7 @@ coef(lasso.mod, s=cv.lasso$lambda.min) # beta’s for the best lambda
 y.pred <- predict(lasso.mod, s=lambda.min, newx=x.test) # predict for test
 mse.lasso <- mean((y.test - y.pred)^2); mse.lasso # mse for the predicted test rows
 ```
+
 Looking at lambda 1se (the one we should use I think?)
 ```{r}
 coef(lasso.mod, s=cv.lasso$lambda.1se) # beta’s for lambda.1se
@@ -360,6 +371,10 @@ mse.step_up <- mean((y.test - y.pred)^2); mse.step_up # mse for the predicted te
 ```
 
 Step-up model is better? Is this the right way to compare?
+
+```{r}
+cv.lasso
+```
 
 
 ## Exercise 3
