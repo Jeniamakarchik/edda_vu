@@ -25,6 +25,7 @@ head(tree_df)
 
 **a)** 
 To investigate whether tree type influences total wood volume, we can perform a one-way ANOVA.
+
 ```{r}
 tree_df$type <- as.factor(tree_df$type)
 tree_type_lm <- lm(volume~type, data=tree_df)
@@ -40,27 +41,22 @@ t.test(tree_df$volume[mask], tree_df$volume[!mask])
 This supports the result from the ANOVA test. The estimated volume is 30.2 for Beech trees and 35.2 for Oak trees.
 
 **b)** 
+
 To investigate this claim, we create two models, each including all three explanatory variables (*type*, *diameter* and *height*). In the first model, we also include the pairwise interaction between *type* and *diameter*.
+
 ```{r}
 tree_type_d_lm <- lm(volume~height+type*diameter, data=tree_df)
 anova(tree_type_d_lm)
 ```
 
-```{r}
-summary(tree_type_d_lm)
-```
-
+In the second model, we include the pairwise interaction between *type* and *height*.
 
 ```{r}
 tree_type_h_lm <- lm(volume~diameter+type*height, data=tree_df)
 anova(tree_type_h_lm)
 ```
 
-```{r}
-summary(tree_type_h_lm)
-```
-
-We see that both pairwise interactions are not significant. Therefore, we can conclude that both *height* and *diameter* have the same influence on *volume* regardless of *type*. Both models suggest that all three explanatory variables have a significant effect individually.
+We see that both pairwise interactions are not significant. Therefore, we can conclude that both *height* and *diameter* have the same influence on *volume* regardless of *type*.
 
 **c)** 
 
@@ -80,6 +76,7 @@ anova(tree_add_dh_lm)
 ```{r}
 summary(tree_add_dh_lm)
 ```
+
 This model has a high R-squared value while using fewer variables, all of which are significant. Since simpler models are generally preferred, this is our model of choice to make predictions. As a final test, we need to check this model's assumptions to ensure that the conclusions we draw from it are valid:
 
 ```{r, echo=FALSE}
@@ -173,45 +170,19 @@ To further investigate collinearity, we can examine the correlations between all
 ```{r}
 round(cor(crime_df[, c(exp_vars)]), 2)
 ```
-<<<<<<<< IS VIF NECCESSARY?  >>>>>>>>
 
-To resolve the problem of collinearity, we can iteratively remove variables based on their VIF-values as follows:
+We can also use the VIF to see which variables are collinear (VIF > 5 is cause for concern).
 
 ```{r, include=FALSE}
 library(car)
 ```
-
-Full model:
-
 ```{r}
 vif(lm(expend~bad+crime+lawyers+employ+pop, data=crime_df))
 ```
 
-Remove *employ*:
+This further confirms that collinearity exists for the variables *bad*, *lawyers*, *employ* and *pop*.
 
-```{r}
-vif(lm(expend~bad+crime+lawyers+pop, data=crime_df_upd))
-```
-
-Remove *pop*:
-
-```{r}
-vif_lm = lm(expend~bad+crime+lawyers, data=crime_df_upd)
-vif(vif_lm)
-```
-
-```{r}
-summary(vif_lm)
-```
-In the resulting model, all the explanatory variables are significant.
-
-<<<<<<<< SHOULD WE SHOW PLOT AGAIN?? >>>>>>>>
-
-Therefore, after removing the influence points and collinear explanatory variables, the adjusted scatter plot appears as follows. We will work with this adjusted data for the remainder of this question.
-
-```{r}
-pairs(crime_df_upd[, c(response, "bad", "crime", "lawyers")])
-```
+**From this point on, we will proceed *without* the influence points.**
 
 **b)** 
 
@@ -308,15 +279,16 @@ new_data <- data.frame(bad=50, crime=5000, lawyers=5000, employ=5000, pop=5000)
 predict(step_up_lm, new_data, interval="prediction", level=0.95)
 ```
 
-We can improve this interval (make it more narrow) by considering the **confidence interval**, which does not take into account the error.
+We cannot improve this interval since we have already removed the influence points from the data.
 
-```{r}
+```{r, include=FALSE}
 predict(step_up_lm, new_data, interval="confidence", level=0.95)
 ```
 
 **d)** 
 
-We can apply the lasso method as follows:
+We can apply the LASSO method as follows:
+
 ```{r, include=FALSE}
 # install.packages("glmnet", repos = "https://cran.us.r-project.org")
 library(glmnet)
@@ -345,7 +317,6 @@ plot(cv.lasso) # the best lambda by cross-validation
 ```
 
 ```{r}
-(lambda.min <- cv.lasso$lambda.min)
 (lambda.1se <- cv.lasso$lambda.1se)
 ```
 
@@ -354,48 +325,30 @@ plot(cv.lasso) # the best lambda by cross-validation
 assess.glmnet(lasso.mod, newx = x.test, newy = y.test, s=cv.lasso$lambda.1se)
 ```
 
-Looking at lambda min
-```{r}
-coef(lasso.mod, s=cv.lasso$lambda.min) # beta’s for the best lambda
-y.pred <- predict(lasso.mod, s=lambda.min, newx=x.test) # predict for test
-mse.lasso <- mean((y.test - y.pred)^2); mse.lasso # mse for the predicted test rows
-```
-
-Looking at lambda 1se (the one we should use I think?)
+Looking at lambda 1se
 ```{r}
 coef(lasso.mod, s=cv.lasso$lambda.1se) # beta’s for lambda.1se
 y.pred <- predict(lasso.mod, s=lambda.1se, newx=x.test) # predict for test
 mse.lasso <- mean((y.test - y.pred)^2); mse.lasso # mse for the predicted test rows
 ```
-Compare to step-up model in (b).
+
+To compare this to the step-up model in (b), we can find the MSE for this model.
+
 ```{r}
 new_data <- data.frame(x.test)
 y.pred <- predict(step_up_lm, new_data, interval="confidence", level=0.95)
 mse.step_up <- mean((y.test - y.pred)^2); mse.step_up # mse for the predicted test rows
 ```
 
-Step-up model is better? Is this the right way to compare?
-
-```{r}
-cv.lasso
-```
-
+We see that the step-up model outperforms the LASSO model, producing a smaller MSE. This could be because LASSO is better suited to situations with many more explanatory variables.
 
 ## Exercise 3
 
 ```{r, include=FALSE}
 # Read data
 titanic_df <- as.data.frame(read.table("data/titanic.txt", header=TRUE))
-```
-
-```{r}
 head(titanic_df)
 ```
-
-```{r}
-plot(titanic_df)
-```
-
 
 **a)** 
 
@@ -420,27 +373,31 @@ hist(titanic_df$Age)
 hist(titanic_df$Age[titanic_df$Survived == 1], ylim =c(0, 140))
 ```
 
-```{r}
-tot_age <- xtabs(~Age, data=titanic_df)
-barplot(xtabs(Survived~Age, data=titanic_df)/tot_age)
-```
 
 ```{r}
 boxplot(Age ~ Sex + PClass, data=titanic_df, col = c("#FFE0B2", "#F57C00")) 
 ```
 
+Removing rows with missing ages:
 ```{r}
 titanic_df_upd <- na.omit(titanic_df)
+```
+
+Fitting the logistic regression model.
+
+```{r}
 titanic_df_upd$PClass <- as.factor(titanic_df_upd$PClass)
 titanic_df_upd$Sex <- as.factor(titanic_df_upd$Sex)
-# head(titanic_df_upd)
-
 base_lm <- glm(Survived ~ Age+PClass+Sex, data = titanic_df_upd, family = binomial)
 ```
 
 ```{r}
+drop1(base_lm, test = "Chisq")
+```
+```{r}
 summary(base_lm)
 ```
+
 
 ```{r}
 exp(coef(base_lm))
@@ -457,13 +414,15 @@ anova(glm(Survived ~ Age*PClass, data = titanic_df_upd, family = binomial), test
 ```{r}
 anova(glm(Survived ~ Age*Sex, data = titanic_df_upd, family = binomial), test="Chisq")
 ```
-Therefore we decided to keep following model as Age:Sex intersection is significant.
+Therefore we decided to keep following model as Age:Sex interaction is significant. PClass was significant by itself, so we include it in the final model.
 
+<<<<< INVESTIGATE VARIABLES USING anova(smaller model, bigger model) >>>>>>
 ```{r}
 final_lm <- glm(Survived ~ PClass+Age*Sex, data = titanic_df_upd, family = binomial)
-anova(final_lm, test="Chisq")
+summary(final_lm, test="Chisq")
 ```
 
+<<<<< THIS MODEL MAY CHANGE >>>>>
 ```{r}
 newdata <- data.frame(Age=c(55, 55, 55, 55, 55, 55), PClass=c("1st", "1st", "2nd", "2nd", "3rd", "3rd"), Sex=c("female", "male", "female", "male", "female", "male"))
 predict(final_lm, newdata, type="response")
@@ -472,31 +431,45 @@ predict(final_lm, newdata, type="response")
 For "female" all the probs > 0.5 and for the "male" probs are < 0.5.
 
 **c)** 
-Use confusion matrix, log likelihood as quality measures
+
+We can predict the survival status of the individuals by looking at the fitted values produced by the model, which gives the probability of survival. We can then set a threshold of 0.5. We can predict that those with a probability lower than this did not survive, and those with a probability higher than this did survive. To measure the quality of this prediction method, we can use tools such as a confusion matrix and log likelihood as quality measures.
 
 **d)** 
 
-```{r}
-table(titanic_df_upd$PClass, titanic_df_upd$Sex)
-```
-```{r}
-chisq.test(x=titanic_df_upd$Survived, y=titanic_df_upd$Sex)
-```
+**Survived vs SEX**
+
 For 2x2 tables we can obtain exact p-value using the Fisher test.
 
 ```{r}
 fisher.test(x=titanic_df_upd$Survived, y=titanic_df_upd$Sex)
 ```
-
+Therefore *Sex* and *Survived* are not independent.
 
 ```{r}
 chisq.test(x=titanic_df_upd$Survived, y=titanic_df_upd$PClass)
 ```
-We reject null hypothesis, meaning that rows and cols are actually dependent: Sex and PClass have influence on Survived variable.
+Therefore *PClass* and *Survived* are not independent.
 
 **e)** 
 
-TODO: comparison btw c) and d) ?
+Logistic 
+
+A - Also tells you *how* and *how much* the response depends on the variable
+D - https://careerfoundry.com/en/blog/data-analytics/what-is-logistic-regression/
+
+vs 
+
+Contingency 
+
+A - since only testing for effect, maybe more reliable outcome?
+D - Only tells you whether dependence exists... not the nature of it
+
+vs 
+
+Fisher
+
+A - exact p-value
+D - only works for 2x2
 
 contingency table tells us only about the presence of effect and doesn't provide some quantitative characteristics
 
