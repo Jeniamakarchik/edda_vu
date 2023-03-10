@@ -285,7 +285,12 @@ step_up_lm <- lm(expend~employ+crime+pop, data=crime_df_upd)
 summary(step_up_lm)
 ```
 
-Final model: expend = -247 + 0.0209\*employ + 0.0543\*crime + 0.0714\*pop $\pm$ error, with $R^2 = 0.974$.
+Final model: expend = -247 + 0.0209\*employ + 0.0543\*crime + 0.0714\*pop $\pm$ error, with $R^2 = 0.974$. Using VIF we can 
+
+```{r}
+vif(step_up_lm)
+```
+
 
 We see that the step-up method naturally removes collinearity and produced a better model than was arrived upon using VIF in (a), which had an R-squared value of 0.957.
 
