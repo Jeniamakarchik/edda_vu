@@ -30,10 +30,9 @@ tree_df$type <- as.factor(tree_df$type)
 tree_type_lm <- lm(volume~type, data=tree_df)
 anova(tree_type_lm)
 ```
-```{r}
-summary(tree_type_lm)
-```
+
 With $p > 0.05$, we can conclude that *type* does not have a significant effect on *volume*. Because the factor *type* has two levels, we can apply a two sample t-test.
+
 ```{r}
 mask <- tree_df$type == "beech"
 t.test(tree_df$volume[mask], tree_df$volume[!mask])
@@ -61,7 +60,7 @@ anova(tree_type_h_lm)
 summary(tree_type_h_lm)
 ```
 
-We see that both pairwise interactions are not significant. Therefore, we can conclude that both *height* and *diameter* have the same influence regardless of *type*. Both models suggest that all three explanatory variables have a significant effect individually.
+We see that both pairwise interactions are not significant. Therefore, we can conclude that both *height* and *diameter* have the same influence on *volume* regardless of *type*. Both models suggest that all three explanatory variables have a significant effect individually.
 
 **c)** 
 
@@ -84,7 +83,7 @@ anova(tree_add_dh_lm)
 ```{r}
 summary(tree_add_dh_lm)
 ```
-This model has almost the same R-squared value as before, while using fewer variables. Since simpler models are generally preferred, this is our model of choice to make predictions. As a final test, we need to check this model's assumptions to ensure that the conclusions we draw from it are valid:
+This model has a high R-squared value while using fewer variables, all of which are significant. Since simpler models are generally preferred, this is our model of choice to make predictions. As a final test, we need to check this model's assumptions to ensure that the conclusions we draw from it are valid:
 
 ```{r, echo=FALSE}
 par(mfrow=c(1, 2))
@@ -96,7 +95,7 @@ While these plots are not perfect, we believe the model assumptions to be valid.
 Therefore, the effects of *type*, *diameter* and *height* can be summarized as follows:
 
 * The tree *type* does not affect volume significantly.
-* Looking at the coefficients, we see that increasing both height and diameter result in an increase in volume, with diameter having a bigger impact (with a gradient of 4.63 compared to *height's* 0.43). This makes sense given that we know volume is proportional to the the square of the diameter.
+* Looking at the coefficients, we see that increasing both height and diameter result in an increase in volume, with diameter having a bigger impact (with a gradient of 4.63 compared to *height's* 0.43). This makes sense given that we know volume is proportional to the square of the diameter.
 
 To predict the volume for a tree with the overall average diameter and height, we can use the following linear regression model:
 
@@ -106,12 +105,14 @@ mean_d <- mean(tree_df$diameter)
 mean_h <- mean(tree_df$height)
 means <-  data.frame(diameter=c(mean_d), height=c(mean_h))
 
-predict(tree_add_dh_lm, means, se.fit = TRUE)
+predict(tree_add_dh_lm, means, interval = "confidence")
 ```
 Therefore we expect the volume for such a tree to be 32.6.
 
 **d)** 
-Assuming that a tree is roughly cylindrical, we expect that *volume* would be proportional to the *height* multiplied by the square of *diameter*. We perform this transformation and add it as a new column in the data frame. We could apply the true transformation, $V = h \times \pi (d/2)^2$, but this would just add unnecessary constants which would already be captured in the regression coefficients.
+Assuming that a tree is roughly cylindrical, we expect that *volume* would be proportional to the *height* multiplied by the square of *diameter*. We perform this transformation and add it as a new column in the data frame. We could apply the true transformation, $V = h \times \pi (d/2)^2$, but this would just add unnecessary constants which would already be captured in the regression coefficients. We also will not include *type* because it was not significant.
+
+
 ```{r}
 tree_df$math_volume <- tree_df$height * tree_df$diameter^2
 math_volume_lm <- lm(volume~math_volume, data=tree_df)
@@ -121,7 +122,9 @@ anova(math_volume_lm)
 ```{r}
 summary(math_volume_lm)
 ```
-We see that this transformation does indeed produce an explanatory value with a significant effect. We also see that the R-squared value of 0.975 is higher than that of the previous models, indicating that it better explains the data. Finally, we check the assumptions of this model.
+
+We see that this transformation does indeed produce an explanatory value with a significant effect. We also see that the R-squared (0.975) and adjusted R-squared (0.974) values are higher than that of the model chosen in (c) (tree_add_dh_lm), indicating that it better explains the data. Finally, we check the assumptions of this model.
+
 ```{r, echo=FALSE}
 par(mfrow=c(1,2))
 
@@ -143,11 +146,10 @@ exp_vars <- c("bad", "crime", "lawyers", "employ", "pop")
 ```
 
 **a)** 
-<<<<<<<< INCLUDE OTHER GRAPHICAL SUMMARIES??? >>>>>>>>
 
 To investigate the interactions between all the variables of interest, we can plot the pairwise scatter plots for all their combinations:
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, fig.height=5}
 pairs(crime_df[, c(response, exp_vars)])
 ```
 
