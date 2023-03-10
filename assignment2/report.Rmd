@@ -69,10 +69,7 @@ In (b), we saw that the interactions of *height* and *diameter* with *type* were
 
 ```{r}
 tree_add_all_lm <- lm(volume~diameter+height+type, data=tree_df)
-anova(tree_add_all_lm)
-```
-```{r}
-summary(tree_add_all_lm)
+drop1(tree_add_all_lm, test= "F")
 ```
 
 We see that the effect of *type* is not significant in the additive model. Therefore we will investigate an additive model that excludes *type*.
@@ -159,7 +156,7 @@ We can use Cook's distance to find the influence points (a distance greater than
 crime_lm <- lm(expend~bad+crime+lawyers+employ+pop, data=crime_df)
 cooks.distance(crime_lm)[cooks.distance(crime_lm) > 1]
 ```
-```{r, echo=FALSE}
+```{r, include=FALSE}
 plot(cooks.distance(crime_lm), type='b', ylab="Cook's distance", main = "Cook's distance for expensecrime.txt")
 ```
 
@@ -510,15 +507,6 @@ head(coups_df)
 ```{r}
 # coups_df$pollib <- as.factor(coups_df$pollib)
 # coups_df$numregim <- as.factor(coups_df$numregim)
-summary(coups_df)
-```
-
-```{r}
-hist(coups_df$miltcoup)
-```
-
-```{r}
-plot(coups_df)
 ```
 
 
