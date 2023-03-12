@@ -500,27 +500,31 @@ Through Poisson regression, and its summary, we can find that the variables that
 **b)** 
 
 ```{r, include=FALSE}
-summary(glm(miltcoup ~ oligarchy + parties + pctvote + popn + size + numelec + pollib, data = coups_df, family = poisson), test="Chisq")
+step1 <- glm(miltcoup ~ oligarchy + parties + pctvote + popn + size + numelec + pollib, data = coups_df, family = poisson)
+drop1(step1, test="Chisq")
 ```
 
 ```{r, include=FALSE}
-summary(glm(miltcoup ~ oligarchy + parties + pctvote + popn + size + pollib, data = coups_df, family = poisson), test="Chisq")
+step2 <- glm(miltcoup ~ oligarchy + parties + pctvote + popn + size + pollib, data = coups_df, family = poisson)
+drop1(step2, test="Chisq")
 ```
 
 ```{r, include=FALSE}
-summary(glm(miltcoup ~ oligarchy + parties + pctvote + popn + pollib, data = coups_df), test="Chisq")
+step3 <- glm(miltcoup ~ oligarchy + parties + pctvote + popn + pollib, data = coups_df)
+drop1(step3, test="Chisq")
 ```
 
 ```{r, include=FALSE}
-summary(glm(miltcoup ~ oligarchy + parties + pctvote + pollib, data = coups_df), test="Chisq")
+step4 <- glm(miltcoup ~ oligarchy + parties + popn + pollib, data = coups_df)
+drop1(step4, test="Chisq")
 ```
 
 ```{r, include=FALSE}
-final_plm <- glm(miltcoup ~ oligarchy + parties + pollib, data = coups_df, family = poisson)
-summary(final_plm, test="Chisq")
+step5 <- glm(miltcoup ~ oligarchy + parties + pollib, data = coups_df, family = poisson)
+drop1(step5, test="Chisq")
 ```
 
-The step down method was applied, removing the variables: *numelec*, *size*, *popn*, and *pctvote*, respectively. After which, all remaining variables were significant, resulting in the model:
+The step down method was applied, removing the variables: *numelec*, *size*, *pctvote*, and *popn*, respectively. After which, all remaining variables were significant, resulting in the model:
 ```{r}
 final_plm <- glm(miltcoup ~ oligarchy + parties + pollib, data = coups_df, family = poisson)
 summary(final_plm, test="Chisq")
@@ -543,4 +547,4 @@ newdata <- data.frame(pollib=c("0", "1", "2"), oligarchy=c(5.22, 5.22, 5.22), pa
 predict(final_plm, newdata, type="response")
 ```
 
-Our model predicts that there will be roughly 3 successful coups for pollib=0, roughly 2 successful coups for pollib=1 and 1 successful coup for pollib=2.
+Our model predicts that there will be roughly 3 successful coups for pollib=0, roughly 2 successful coups for pollib=1, and 1 successful coup for pollib=2.
