@@ -478,61 +478,59 @@ contingency table tells us only about the presence of effect and doesn't provide
 ```{r, include=FALSE}
 # Read data
 coups_df <- as.data.frame(read.table("data/coups.txt", header=TRUE))
-```
-
-```{r}
 head(coups_df)
 ```
 
+
 ```{r}
-# coups_df$pollib <- as.factor(coups_df$pollib)
-# coups_df$numregim <- as.factor(coups_df$numregim)
+coups_df$pollib <- as.factor(coups_df$pollib)
 ```
 
 
 **a)** 
 ```{r}
-poison_glm <- glm(miltcoup ~ oligarchy + pollib + parties + pctvote + popn + size + numelec + numregim, data = coups_df, family = poisson)
+poison_glm <- glm(miltcoup ~ oligarchy + parties + pctvote + popn + size + numelec + numregim + pollib, data = coups_df, family = poisson)
+drop1(poison_glm, test= "Chisq")
 summary(poison_glm)
 ```
 
-<!-- ```{r} -->
-<!-- drop1(poison_glm, test="Chisq") -->
-<!-- ``` -->
 
-Through summary(drop1)we can find the variables that are significant in predicting number of successful military coups: oligarchy, pollib, parties.
+Through Poisson regression, and its summary, we can find that the variables that are significant in predicting number of successful military coups are: *oligarchy*, *pollib*, and *parties*.
 
 **b)** 
 
-```{r}
-summary(glm(miltcoup ~ oligarchy + pollib + parties + pctvote + popn + size + numelec, data = coups_df, family = poisson), test="Chisq")
+```{r, include=FALSE}
+summary(glm(miltcoup ~ oligarchy + parties + pctvote + popn + size + numelec + pollib, data = coups_df, family = poisson), test="Chisq")
 ```
 
-```{r}
-summary(glm(miltcoup ~ oligarchy + pollib + parties + pctvote + popn + size, data = coups_df, family = poisson), test="Chisq")
+```{r, include=FALSE}
+summary(glm(miltcoup ~ oligarchy + parties + pctvote + popn + size + pollib, data = coups_df, family = poisson), test="Chisq")
 ```
 
-```{r}
-summary(glm(miltcoup ~ oligarchy + pollib + parties + pctvote + popn, data = coups_df), test="Chisq")
+```{r, include=FALSE}
+summary(glm(miltcoup ~ oligarchy + parties + pctvote + popn + pollib, data = coups_df), test="Chisq")
 ```
 
-```{r}
-summary(glm(miltcoup ~ oligarchy + pollib + parties + popn, data = coups_df), test="Chisq")
+```{r, include=FALSE}
+summary(glm(miltcoup ~ oligarchy + parties + pctvote + pollib, data = coups_df), test="Chisq")
 ```
 
-```{r}
+```{r, include=FALSE}
 final_plm <- glm(miltcoup ~ oligarchy + parties + pollib, data = coups_df, family = poisson)
 summary(final_plm, test="Chisq")
 ```
 
-After step-down approach there are oligarchy, parties and pollib left. (For treating vars as factors only oligarchy left)
-In comparison with a) all the same factors are significant.
+The step down method was applied, removing the variables: *numelec*, *size*, *popn*, and *pctvote*, respectively. After which, all remaining variables were significant, resulting in the model:
+```{r}
+final_plm <- glm(miltcoup ~ oligarchy + parties + pollib, data = coups_df, family = poisson)
+summary(final_plm, test="Chisq")
+```
+In comparison with a) all the same variables are significant.
 
 **c)** 
 
 ```{r}
 coups_df$pollib <- as.factor(coups_df$pollib)
-coups_df$numregim <- as.factor(coups_df$numregim)
 ```
 
 ```{r}
@@ -541,8 +539,8 @@ mean(coups_df$oligarchy); mean(coups_df$parties)
 
 
 ```{r}
-newdata <- data.frame(pollib=c(0, 1, 2), oligarchy=c(5.22, 5.22, 5.22), parties=c(17.1, 17.1, 17.1))
+newdata <- data.frame(pollib=c("0", "1", "2"), oligarchy=c(5.22, 5.22, 5.22), parties=c(17.1, 17.1, 17.1))
 predict(final_plm, newdata, type="response")
 ```
 
-Our model is predicting there will be roughly 3 successful coups for pollib=0, roughly 2 successful coups for pollib=1 and 1 successful coup for pollib=2.
+Our model predicts that there will be roughly 3 successful coups for pollib=0, roughly 2 successful coups for pollib=1 and 1 successful coup for pollib=2.
