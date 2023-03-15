@@ -5,6 +5,7 @@ date: "15 March 2023"
 output: pdf_document
 fontsize: 11pt
 highlight: tango
+header-includes: \usepackage{xcolor}
 ---
 
 ```{r setup, include = FALSE}
@@ -23,7 +24,8 @@ tree_df <- as.data.frame(read.table("data/treeVolume.txt", header=TRUE))
 head(tree_df)
 ```
 
-**a)** 
+**a)**  
+  
 To investigate whether tree type influences total wood volume, we can perform a one-way ANOVA.
 
 ```{r}
@@ -32,16 +34,17 @@ tree_type_lm <- lm(volume~type, data=tree_df)
 anova(tree_type_lm)
 ```
 
-With $p > 0.05$, we can conclude that *type* does not have a significant effect on *volume*. Because the factor *type* has two levels, we can apply a two sample t-test.
+With $p > 0.05$, we can conclude that *type* does not have a significant effect on *volume*. Because the factor *type* has two levels, we can apply an unpaired two sample t-test.
 
 ```{r}
 mask <- tree_df$type == "beech"
 t.test(tree_df$volume[mask], tree_df$volume[!mask])
 ```
-This supports the result from the ANOVA test. The estimated volume is 30.2 for Beech trees and 35.2 for Oak trees.
 
-**b)** 
+Again we see that *type* is not significant. This supports the result from the ANOVA test. The estimated volume is 30.2 for Beech trees and 35.2 for Oak trees.
 
+**b)**  
+  
 To investigate this claim, we create two models, each including all three explanatory variables (*type*, *diameter* and *height*). In the first model, we also include the pairwise interaction between *type* and *diameter*.
 
 ```{r}
@@ -58,8 +61,8 @@ anova(tree_type_h_lm)
 
 We see that both pairwise interactions are not significant. Therefore, we can conclude that both *height* and *diameter* have the same influence on *volume* regardless of *type*.
 
-**c)** 
-
+**c)**  
+  
 In (b), we saw that the interactions of *height* and *diameter* with *type* were not significant, and so we will investigate a purely additive model (assuming no interactions).
 
 ```{r}
@@ -84,6 +87,7 @@ par(mfrow=c(1, 2))
 qqnorm(residuals(tree_add_dh_lm))
 plot(fitted(tree_add_dh_lm), residuals(tree_add_dh_lm))
 ```
+
 While these plots are not perfect, we believe the model assumptions to be valid. 
 
 Therefore, the effects of *type*, *diameter* and *height* can be summarized as follows:
@@ -94,6 +98,7 @@ Therefore, the effects of *type*, *diameter* and *height* can be summarized as f
 To predict the volume for a tree with the overall average diameter and height, we can use the following linear regression model:
 
 $$volume = -64.37 + 4.63 * diameter + 0.43 * height$$
+
 ```{r}
 mean_d <- mean(tree_df$diameter)
 mean_h <- mean(tree_df$height)
@@ -101,11 +106,12 @@ means <-  data.frame(diameter=c(mean_d), height=c(mean_h))
 
 predict(tree_add_dh_lm, means, interval = "confidence")
 ```
-Therefore we expect the volume for such a tree to be 32.6.
 
-**d)** 
+Therefore we expect the volume for such a tree to be 32.6, with a 95% CI of [31.7, 33.4].
+
+**d)**  
+  
 Assuming that a tree is roughly cylindrical, we expect that *volume* would be proportional to the *height* multiplied by the square of *diameter*. We perform this transformation and add it as a new column in the data frame. We could apply the true transformation, $V = h \times \pi (d/2)^2$, but this would just add unnecessary constants which would already be captured in the regression coefficients. We also will not include *type* because it was not significant.
-
 
 ```{r}
 tree_df$math_volume <- tree_df$height * tree_df$diameter^2
@@ -143,7 +149,7 @@ exp_vars <- c("bad", "crime", "lawyers", "employ", "pop")
 
 To investigate the interactions between all the variables of interest, we can plot the pairwise scatter plots for all their combinations:
 
-```{r, echo=FALSE, fig.height=5}
+```{r, echo=FALSE, fig.height=6}
 pairs(crime_df[, c(response, exp_vars)])
 ```
 
@@ -253,14 +259,13 @@ step_up_lm <- lm(expend~employ+crime+pop, data=crime_df_upd)
 summary(step_up_lm)
 ```
 
-Final model: expend = -247 + 0.0209\*employ + 0.0543\*crime + 0.0714\*pop $\pm$ error, with $R^2 = 0.974$. Using VIF we can 
+Final model: expend = -247 + 0.0209\*employ + 0.0543\*crime + 0.0714\*pop $\pm$ error, with $R^2 = 0.974$. Using VIF we can again check the model for collinearity.
 
 ```{r}
 vif(step_up_lm)
 ```
 
-
-We see that the step-up method naturally removes collinearity and produced a better model than was arrived upon using VIF in (a), which had an R-squared value of 0.957.
+We see that the step-up method naturally removes collinearity and produced a better model than was arrived upon using VIF in (a), which had an R-squared value of 0.957. \textcolor{red}{But the VIF gives values greater than 5? Surely we can't say this?}
 
 Finally, we check the model assumptions, which can be accepted based on the following plots:
 
@@ -271,9 +276,10 @@ qqnorm(residuals(step_up_lm))
 plot(fitted(step_up_lm), residuals(step_up_lm))
 ```
 
-**c)** 
-
+**c)**  
+  
 Using the step-up model found in (b), the 95% prediction interval for *expend* is given by:
+
 ```{r}
 new_data <- data.frame(bad=50, crime=5000, lawyers=5000, employ=5000, pop=5000)
 predict(step_up_lm, new_data, interval="prediction", level=0.95)
@@ -285,8 +291,8 @@ We cannot improve this interval since we have already removed the influence poin
 predict(step_up_lm, new_data, interval="confidence", level=0.95)
 ```
 
-**d)** 
-
+**d)**  
+  
 We can apply the LASSO method as follows:
 
 ```{r, include=FALSE}
@@ -309,38 +315,41 @@ cv.lasso <- cv.glmnet(x.train,y.train,alpha=1,type.measure='mse')
 ```
 
 ```{r}
-plot(lasso.mod, label=T, xvar="lambda")  # have a look at the lasso path
+plot(lasso.mod, label=T, xvar="lambda")
 ```
 
 ```{r}
-plot(cv.lasso) # the best lambda by cross-validation
+plot(cv.lasso)
 ```
+
+The resulting choice of lambda is *lambda.1se*, which is given by:
 
 ```{r}
 (lambda.1se <- cv.lasso$lambda.1se)
 ```
 
-```{r}
+```{r, include=FALSE}
 # https://glmnet.stanford.edu/articles/glmnet.html#assessing-models-on-test-data-1
 assess.glmnet(lasso.mod, newx = x.test, newy = y.test, s=cv.lasso$lambda.1se)
+coef(lasso.mod, s=lambda.1se) # beta’s for lambda.1se
 ```
 
-Looking at lambda 1se
+We can evaluate the resulting model by examining the Mean Squared Error (MSE) on the test set.
+
 ```{r}
-coef(lasso.mod, s=cv.lasso$lambda.1se) # beta’s for lambda.1se
-y.pred <- predict(lasso.mod, s=lambda.1se, newx=x.test) # predict for test
-mse.lasso <- mean((y.test - y.pred)^2); mse.lasso # mse for the predicted test rows
+y.pred <- predict(lasso.mod, s=lambda.1se, newx=x.test)
+mse.lasso <- mean((y.test - y.pred)^2); mse.lasso
 ```
 
-To compare this to the step-up model in (b), we can find the MSE for this model.
+To compare this to the step-up model in (b), we can find the MSE for this model on the same test set. \textcolor{red}{Isn't this unfair because the step up model was trained on the entire data set? Do we need to perform step up using only the training dataset? Or maybe we can just point this out but not actually do it?}
 
 ```{r}
 new_data <- data.frame(x.test)
 y.pred <- predict(step_up_lm, new_data, interval="confidence", level=0.95)
-mse.step_up <- mean((y.test - y.pred)^2); mse.step_up # mse for the predicted test rows
+mse.step_up <- mean((y.test - y.pred)^2); mse.step_up
 ```
 
-We see that the step-up model outperforms the LASSO model, producing a smaller MSE. This could be because LASSO is better suited to situations with many more explanatory variables.
+We see that the step-up model outperforms the LASSO model, producing a smaller MSE. This could be because LASSO is better suited to situations with many more explanatory variables. \textcolor{red}{Or because the step-model used the entire data set?}
 
 ## Exercise 3
 
@@ -350,7 +359,11 @@ titanic_df <- as.data.frame(read.table("data/titanic.txt", header=TRUE))
 head(titanic_df)
 ```
 
-**a)** 
+**a)**  
+
+### Studying the Data  
+
+We can start by looking at the summary data for each column:
 
 ```{r}
 titanic_df$PClass <- as.factor(titanic_df$PClass)
@@ -358,32 +371,48 @@ titanic_df$Sex <- as.factor(titanic_df$Sex)
 summary(titanic_df)
 ```
 
+We see that there were more people in 3rd class than in 1st and 2nd combined. Half the people were between the ages 21 and 39, with an average of 30 years old. Males made up 65% of the passengers, and 34% of all the passengers survived.  
+
+We can also examine how the sexes were distributed over the classes:
+
 ```{r}
 tot_comb <- xtabs(~PClass+Sex, data=titanic_df)
 tot_comb
 ```
+
+As expected, there are more males in each category, with the biggest difference in 3rd class.  
+
+We can examine the same distribution in terms of percentage of people who survived for each combination: 
+
 ```{r}
 tot_comb.surv <- xtabs(Survived~PClass+Sex, data=titanic_df)
 round(tot_comb.surv/tot_comb, 2)
 ```
 
+It appears that the survival rate increases from 3rd to 1st class, and is much higher for females in all three cases, although this margin is less pronounced for 3rd class.  
+
+Finally, we can plot the distribution of ages:
+
 ```{r}
-par(mfrow=c(1, 2))
-hist(titanic_df$Age)
-hist(titanic_df$Age[titanic_df$Survived == 1], ylim =c(0, 140))
+hist(titanic_df$Age, xlab="Age", main="Age Distribution of Passengers")
 ```
 
+We can see that the bulk of the ages are grouped around 25, with exponentially fewer people for older groupings.
 
-```{r}
+```{r, include=FALSE}
+# I don't think this is plot tells us anything useful?
 boxplot(Age ~ Sex + PClass, data=titanic_df, col = c("#FFE0B2", "#F57C00")) 
 ```
 
-Removing rows with missing ages:
+### Fitting the Model  
+
+First, we will removing rows with missing ages:
+
 ```{r}
 titanic_df_upd <- na.omit(titanic_df)
 ```
 
-Fitting the logistic regression model.
+Next, we can fit a logistic regression model and test it as follows:
 
 ```{r}
 titanic_df_upd$PClass <- as.factor(titanic_df_upd$PClass)
@@ -394,41 +423,50 @@ base_lm <- glm(Survived ~ Age+PClass+Sex, data = titanic_df_upd, family = binomi
 ```{r}
 drop1(base_lm, test = "Chisq")
 ```
+We see that all three variables have a significant effect on the odds of survival. To further interpret the results, we can look at the model summary and its coefficients.
+
 ```{r}
 summary(base_lm)
 ```
 
+Thus, the estimated odds is:
 
-```{r}
-exp(coef(base_lm))
-```
+$$\hat{o}_k=\frac{P \widehat{\left(Y_k=1\right)}}{P \widehat{\left(Y_k=0\right)}} \approx e^{3.76 - 0.04*Age_k - 1.29*PClass2nd_k - 2.52*PClass3rd_k - 2.63*Sexmale_k}$$
 
-TODO: add discussion of odds from the paper
+We see that all the coefficients are negative. This means that increasing age, being male and moving down in class all lower a passenger's odds of survival. Moreover, the magnitude of the coefficients indicates how sensitive these odds are to each variable. From this we can infer that 3rd class has worse odds than 2nd class, and that being a male is the most influential factor in decreasing one's odds of survival. While increasing age also lowers one's odds, it has the smallest effect compared to to the other two variables.
 
 **b)** 
 
+Investigating the interaction between *Age* and *PClass*:
 ```{r}
 anova(glm(Survived ~ Age*PClass, data = titanic_df_upd, family = binomial), test="Chisq")
 ```
 
+We see that the interaction is not siginficant. Next, we investigating the interaction between *Age* and *Sex*:
+
 ```{r}
 anova(glm(Survived ~ Age*Sex, data = titanic_df_upd, family = binomial), test="Chisq")
 ```
-Therefore we decided to keep following model as Age:Sex interaction is significant. PClass was significant by itself, so we include it in the final model.
 
-<<<<< INVESTIGATE VARIABLES USING anova(smaller model, bigger model) >>>>>>
+Here, the interaction is significant, and so we wish to include it in our model. *PClass* was significant by itself, so we include it in the final model as follows
+
+\textcolor{red}{<<<<< INVESTIGATE VARIABLES USING anova(smaller model, bigger model) >>>>>>}
+
 ```{r}
 final_lm <- glm(Survived ~ PClass+Age*Sex, data = titanic_df_upd, family = binomial)
 summary(final_lm, test="Chisq")
 ```
 
-<<<<< THIS MODEL MAY CHANGE >>>>>
+\textcolor{red}{Comments on this result? Is it bad that Age and Sexmale are not siginficant? Maybe just significant as a whole and that's okay?}  
+
+Using this model we can predict the estimate for the probability of survival for each combination of levels of the factors *PClass* and *Sex* for a person of *Age* 55:
+
 ```{r}
 newdata <- data.frame(Age=c(55, 55, 55, 55, 55, 55), PClass=c("1st", "1st", "2nd", "2nd", "3rd", "3rd"), Sex=c("female", "male", "female", "male", "female", "male"))
 predict(final_lm, newdata, type="response")
 ```
 
-For "female" all the probs > 0.5 and for the "male" probs are < 0.5.
+Again we see that being a women appears to be the dominant factor in increased survival, and that the probability of survival also decreases as you go down in class (from 1st to 3rd)
 
 **c)** 
 
@@ -436,42 +474,48 @@ We can predict the survival status of the individuals by looking at the fitted v
 
 **d)** 
 
-**Survived vs SEX**
+**Survived vs Sex**
 
-For 2x2 tables we can obtain exact p-value using the Fisher test.
+For 2x2 tables we can obtain exact p-value using the Fisher test as follows:
 
 ```{r}
 fisher.test(x=titanic_df_upd$Survived, y=titanic_df_upd$Sex)
 ```
-Therefore *Sex* and *Survived* are not independent.
+
+Therefore *Sex* and *Survived* are not independent.  
+
+**Survived vs PClass**
+
+Since we have three classes, we must use the Chi-squared test to investigate the effect of passenger class:
 
 ```{r}
 chisq.test(x=titanic_df_upd$Survived, y=titanic_df_upd$PClass)
 ```
+
 Therefore *PClass* and *Survived* are not independent.
 
 **e)** 
 
-Logistic 
+No, the approach in (d) is not wrong. Rather there are advantages and disadvantages associated with both methods:
 
-A - Also tells you *how* and *how much* the response depends on the variable
-D - https://careerfoundry.com/en/blog/data-analytics/what-is-logistic-regression/
+**Logistic Regression**  
 
-vs 
+*Advantages* - Can handle a combination of continuous and categorical explanatory variables. Gives you detailed information about the role of explanatory variables since it tells you how the variable affects the response (sign of the coefficient), as well as how sensitive the response is to changes in the variable (magnitude of the coefficient).  
+*Disadvantages* - https://careerfoundry.com/en/blog/data-analytics/what-is-logistic-regression/  \textcolor{red}{???}
 
-Contingency 
+vs  
 
-A - since only testing for effect, maybe more reliable outcome?
-D - Only tells you whether dependence exists... not the nature of it
+**Contingency Table**. 
 
-vs 
+*Advantages* - Works for tables larger than 2x2. Works best for categorical explanatory variables.  
+*Disadvantages* - Does not work for continuous variables. Does not provide an exact p-value, only an approximation. Only tells you whether dependence exists, not the nature of the dependence.  
 
-Fisher
+vs  
 
-A - exact p-value
-D - only works for 2x2
+**Fisher**  
 
-contingency table tells us only about the presence of effect and doesn't provide some quantitative characteristics
+*Advantages* - Provides an exact p-value. Works best for categorical explanatory variables.  
+*Disadvantages* - Does not work for continuous variables. Only works for 2x2. Only tells you whether dependence exists, not the nature of the dependence.
 
 ## Exercise 4
 
