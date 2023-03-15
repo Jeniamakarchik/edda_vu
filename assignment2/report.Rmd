@@ -265,7 +265,7 @@ Final model: expend = -247 + 0.0209\*employ + 0.0543\*crime + 0.0714\*pop $\pm$ 
 vif(step_up_lm)
 ```
 
-We see that the step-up method naturally removes collinearity and produced a better model than was arrived upon using VIF in (a), which had an R-squared value of 0.957. \textcolor{red}{But the VIF gives values greater than 5? Surely we can't say this?}
+We see that the step-up method failed to completely solve the problem of collinearity, since *employ* and *pop* have VIF > 5.
 
 Finally, we check the model assumptions, which can be accepted based on the following plots:
 
@@ -341,7 +341,7 @@ y.pred <- predict(lasso.mod, s=lambda.1se, newx=x.test)
 mse.lasso <- mean((y.test - y.pred)^2); mse.lasso
 ```
 
-To compare this to the step-up model in (b), we can find the MSE for this model on the same test set. \textcolor{red}{Isn't this unfair because the step up model was trained on the entire data set? Do we need to perform step up using only the training dataset? Or maybe we can just point this out but not actually do it?}
+To compare this to the step-up model in (b), we can find the MSE for this model on the same test set.
 
 ```{r}
 new_data <- data.frame(x.test)
@@ -349,7 +349,7 @@ y.pred <- predict(step_up_lm, new_data, interval="confidence", level=0.95)
 mse.step_up <- mean((y.test - y.pred)^2); mse.step_up
 ```
 
-We see that the step-up model outperforms the LASSO model, producing a smaller MSE. This could be because LASSO is better suited to situations with many more explanatory variables. \textcolor{red}{Or because the step-model used the entire data set?}
+We see that the step-up model outperforms the LASSO model, producing a smaller MSE. This could be because LASSO is better suited to situations with many more explanatory variables. It could also be because the step-up model was created based on the entire dataset which includes the test set, unlike the LASSO model, giving it an unfair advantage.
 
 ## Exercise 3
 
@@ -417,16 +417,16 @@ Next, we can fit a logistic regression model and test it as follows:
 ```{r}
 titanic_df_upd$PClass <- as.factor(titanic_df_upd$PClass)
 titanic_df_upd$Sex <- as.factor(titanic_df_upd$Sex)
-base_lm <- glm(Survived ~ Age+PClass+Sex, data = titanic_df_upd, family = binomial)
+additive_lm <- glm(Survived ~ Age+PClass+Sex, data = titanic_df_upd, family = binomial)
 ```
 
 ```{r}
-drop1(base_lm, test = "Chisq")
+drop1(additive_lm, test = "Chisq")
 ```
 We see that all three variables have a significant effect on the odds of survival. To further interpret the results, we can look at the model summary and its coefficients.
 
 ```{r}
-summary(base_lm)
+summary(additive_lm)
 ```
 
 Thus, the estimated odds is:
@@ -448,22 +448,20 @@ We see that the interaction is not siginficant. Next, we investigating the inter
 anova(glm(Survived ~ Age*Sex, data = titanic_df_upd, family = binomial), test="Chisq")
 ```
 
-Here, the interaction is significant, and so we wish to include it in our model. *PClass* was significant by itself, so we include it in the final model as follows
-
-\textcolor{red}{<<<<< INVESTIGATE VARIABLES USING anova(smaller model, bigger model) >>>>>>}
+Here, the interaction is significant, and so we wish to include it in our model. *PClass* was significant by itself, so we include it in the final model as follows:
 
 ```{r}
-final_lm <- glm(Survived ~ PClass+Age*Sex, data = titanic_df_upd, family = binomial)
-summary(final_lm, test="Chisq")
+class_and_interaction_lm <- glm(Survived ~ PClass+Age*Sex, data = titanic_df_upd, family = binomial)
+summary(class_and_interaction_lm, test="Chisq")
 ```
 
-\textcolor{red}{Comments on this result? Is it bad that Age and Sexmale are not siginficant? Maybe just significant as a whole and that's okay?}  
+We see that *Age* and *Sexmale* are no longer significant, and the the AIC for this model (679.1) is lower than that of the purely additive model (705.1). Since we prefer smaller models with only significant variables, we choose the additive model as the final model.
 
 Using this model we can predict the estimate for the probability of survival for each combination of levels of the factors *PClass* and *Sex* for a person of *Age* 55:
 
 ```{r}
 newdata <- data.frame(Age=c(55, 55, 55, 55, 55, 55), PClass=c("1st", "1st", "2nd", "2nd", "3rd", "3rd"), Sex=c("female", "male", "female", "male", "female", "male"))
-predict(final_lm, newdata, type="response")
+predict(additive_lm, newdata, type="response")
 ```
 
 Again we see that being a women appears to be the dominant factor in increased survival, and that the probability of survival also decreases as you go down in class (from 1st to 3rd)
@@ -492,7 +490,7 @@ Since we have three classes, we must use the Chi-squared test to investigate the
 chisq.test(x=titanic_df_upd$Survived, y=titanic_df_upd$PClass)
 ```
 
-Therefore *PClass* and *Survived* are not independent.
+Therefore *PClass* and *Survived* are not independent. Since R does not issue a warning, we can assume that the requirement of at least 80% of the expected values being at least 5 has been met.
 
 **e)** 
 
@@ -501,21 +499,23 @@ No, the approach in (d) is not wrong. Rather there are advantages and disadvanta
 **Logistic Regression**  
 
 *Advantages* - Can handle a combination of continuous and categorical explanatory variables. Gives you detailed information about the role of explanatory variables since it tells you how the variable affects the response (sign of the coefficient), as well as how sensitive the response is to changes in the variable (magnitude of the coefficient).  
-*Disadvantages* - https://careerfoundry.com/en/blog/data-analytics/what-is-logistic-regression/  \textcolor{red}{???}
+*Disadvantages* - It is not well suited to predicting continuous response variables, and if the sample size is too small, it can suffer from overfitting.
 
 vs  
 
 **Contingency Table**. 
 
 *Advantages* - Works for tables larger than 2x2. Works best for categorical explanatory variables.  
-*Disadvantages* - Does not work for continuous variables. Does not provide an exact p-value, only an approximation. Only tells you whether dependence exists, not the nature of the dependence.  
+*Disadvantages* - Does not work for continuous variables. Does not provide an exact p-value, only an approximation. Only tells you whether dependence exists, not the nature of the dependency. You also cannot make predictions using this method.  
 
 vs  
 
 **Fisher**  
 
-*Advantages* - Provides an exact p-value. Works best for categorical explanatory variables.  
-*Disadvantages* - Does not work for continuous variables. Only works for 2x2. Only tells you whether dependence exists, not the nature of the dependence.
+The Fisher test has the same advantages and disadvantages as the Contigency Table except for the following:  
+
+*Advantages* - Provides an exact p-value.  
+*Disadvantages* - Only works for 2x2.  
 
 ## Exercise 4
 
@@ -525,6 +525,7 @@ coups_df <- as.data.frame(read.table("data/coups.txt", header=TRUE))
 head(coups_df)
 ```
 
+We will consider *pollib* as a factor, and the remaining variables as continuous.
 
 ```{r}
 coups_df$pollib <- as.factor(coups_df$pollib)
@@ -532,6 +533,9 @@ coups_df$pollib <- as.factor(coups_df$pollib)
 
 
 **a)** 
+
+Fitting the model using Poisson regression:
+
 ```{r}
 poison_glm <- glm(miltcoup ~ oligarchy + parties + pctvote + popn + size + numelec + numregim + pollib, data = coups_df, family = poisson)
 drop1(poison_glm, test= "Chisq")
@@ -539,7 +543,7 @@ summary(poison_glm)
 ```
 
 
-Through Poisson regression, and its summary, we can find that the variables that are significant in predicting number of successful military coups are: *oligarchy*, *pollib*, and *parties*.
+We see that the variables that are significant in predicting the number of successful military coups are: *oligarchy*, *pollib*, and *parties*.
 
 **b)** 
 
@@ -569,25 +573,25 @@ drop1(step5, test="Chisq")
 ```
 
 The step down method was applied, removing the variables: *numelec*, *size*, *pctvote*, and *popn*, respectively. After which, all remaining variables were significant, resulting in the model:
+
 ```{r}
 final_plm <- glm(miltcoup ~ oligarchy + parties + pollib, data = coups_df, family = poisson)
 summary(final_plm, test="Chisq")
 ```
+
 In comparison with a) all the same variables are significant.
 
 **c)** 
 
+
 ```{r}
-coups_df$pollib <- as.factor(coups_df$pollib)
+m_o <- mean(coups_df$oligarchy); 
+m_p <- mean(coups_df$parties)
 ```
 
-```{r}
-mean(coups_df$oligarchy); mean(coups_df$parties)
-```
-
 
 ```{r}
-newdata <- data.frame(pollib=c("0", "1", "2"), oligarchy=c(5.22, 5.22, 5.22), parties=c(17.1, 17.1, 17.1))
+newdata <- data.frame(pollib=c("0", "1", "2"), oligarchy=c(m_o, m_o, m_o), parties=c(m_p, m_p, m_p))
 predict(final_plm, newdata, type="response")
 ```
 
